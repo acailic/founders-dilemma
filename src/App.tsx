@@ -1,4 +1,4 @@
-import { ActionIcon, AppShell, Burger, Button, Group, Space, Text, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
+import { ActionIcon, AppShell, Burger, Button, Group, Paper, Space, Stack, Text, ThemeIcon, Tooltip, useComputedColorScheme, useMantineColorScheme } from '@mantine/core';
 import { useDisclosure, useHotkeys } from '@mantine/hooks';
 import { notifications } from '@mantine/notifications';
 import { isTauri } from '@tauri-apps/api/core';
@@ -7,7 +7,7 @@ import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
 import * as tauriLogger from '@tauri-apps/plugin-log';
 import { relaunch } from '@tauri-apps/plugin-process';
 import * as tauriUpdater from '@tauri-apps/plugin-updater';
-import { JSX, lazy, LazyExoticComponent, Suspense, useEffect, useRef, useState } from 'react';
+import { JSX, ReactNode, lazy, LazyExoticComponent, Suspense, useEffect, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { BsMoonStarsFill } from 'react-icons/bs';
@@ -23,8 +23,14 @@ import { ScrollToTop } from './components/ScrollToTop';
 import { useTauriContext } from './tauri/TauriProvider';
 import { TitleBar } from './tauri/TitleBar';
 import ExampleView from './views/ExampleView';
+import GameView from './views/GameView';
 import FallbackAppRender from './views/FallbackErrorBoundary';
 import FallbackSuspense from './views/FallbackSuspense';
+import ConfigView from './views/ConfigView';
+import { LuRocket, LuSettings2, LuLightbulb, LuFlaskConical, LuFeather, LuInfo } from 'react-icons/lu';
+import AppIconGraphic from './components/AppIcon';
+import { useGameConfig } from './common/GameConfigContext';
+import { THEME_PRESETS } from './common/themePresets';
 // if some views are large, you can use lazy loading to reduce the initial app load time
 const LazyView = lazy(() => import('./views/LazyView'));
 
@@ -33,19 +39,25 @@ interface View {
 	component: (() => JSX.Element) | LazyExoticComponent<() => JSX.Element>,
 	path: string,
 	exact?: boolean,
-	name: string
+	name: string,
+	icon?: ReactNode
 }
 
-export default function () {
-	const { t } = useTranslation();
-	// check if using custom titlebar to adjust other components
-	const { usingCustomTitleBar } = useTauriContext();
+	export default function () {
+		const { t } = useTranslation();
+		// check if using custom titlebar to adjust other components
+		const { usingCustomTitleBar } = useTauriContext();
+		const { config } = useGameConfig();
+		const accentPreset = THEME_PRESETS[config.themeAccent] ?? THEME_PRESETS.aurora;
+		const accentMantineColor = accentPreset.primaryColor as any;
 
 	// left sidebar
-	const views: View[] = [
-		{ component: ExampleView, path: '/example-view', name: t('ExampleView') },
-		{ component: () => <Text>Woo, routing works</Text>, path: '/example-view-2', name: 'Test Routing' },
-		{ component: LazyView, path: '/lazy-view', name: 'Lazy Load' }
+		const views: View[] = [
+			{ component: GameView, path: '/game', name: "Founder's Dilemma", icon: <LuRocket size={18} /> },
+			{ component: ConfigView, path: '/config', name: 'Configuration', icon: <LuSettings2 size={18} /> },
+			{ component: ExampleView, path: '/example-view', name: t('ExampleView'), icon: <LuLightbulb size={18} /> },
+			{ component: () => <Text>Woo, routing works</Text>, path: '/example-view-2', name: 'Test Routing', icon: <LuFlaskConical size={18} /> },
+			{ component: LazyView, path: '/lazy-view', name: 'Lazy Load', icon: <LuFeather size={18} /> }
 		// Other ways to add views to this array:
 		//     { component: () => <Home prop1={'stuff'} />, path: '/home', name: t('Home') },
 		//     { component: React.memo(About), path: '/about', name: t('About') },
@@ -58,9 +70,10 @@ export default function () {
 	// opened is for mobile nav
 	const [mobileNavOpened, { toggle: toggleMobileNav }] = useDisclosure();
 
-	const [desktopNavOpenedCookie, setDesktopNavOpenedCookie] = useCookie('desktop-nav-opened', 'true');
-	const desktopNavOpened = desktopNavOpenedCookie === 'true';
-	const toggleDesktopNav = () => setDesktopNavOpenedCookie(o => o === 'true' ? 'false' : 'true');
+		const [desktopNavOpenedCookie, setDesktopNavOpenedCookie] = useCookie('desktop-nav-opened', 'true');
+		const desktopNavOpened = desktopNavOpenedCookie === 'true';
+		const toggleDesktopNav = () => setDesktopNavOpenedCookie(o => o === 'true' ? 'false' : 'true');
+		const [tipsVisible, { toggle: toggleTips }] = useDisclosure(true);
 
 	const [scroller, setScroller] = useState<HTMLElement | null>(null);
 	// load preferences using localForage
@@ -151,14 +164,34 @@ export default function () {
 	}
 
 	function NavLinks() {
-		// TODO: useHotkeys and abstract this
-		return views.map((view, index) =>
-			<NavLink to={view.path} key={index} end={view.exact} onClick={() => toggleMobileNav()}
-				className={({ isActive }) => classes.navLink + ' ' + (isActive ? classes.navLinkActive : classes.navLinkInactive)}>
-				{/* TODO: Icons */}
-				<Group><Text>{view.name ? view.name : view.name}</Text></Group>
+		return views.map((view, index) => (
+			<NavLink
+				to={view.path}
+				key={index}
+				end={view.exact}
+				onClick={() => toggleMobileNav()}
+				className={({ isActive }) =>
+					`${classes.navLink} ${isActive ? classes.navLinkActive : classes.navLinkInactive}`
+				}
+			>
+				{({ isActive }) => (
+					<Group gap="sm" className={classes.navLinkContent}>
+						{view.icon && (
+							<ThemeIcon
+								size={34}
+								radius="md"
+								variant={isActive ? 'filled' : 'light'}
+								color={isActive ? accentMantineColor : 'gray'}
+								className={classes.navIcon}
+							>
+								{view.icon}
+							</ThemeIcon>
+						)}
+						<Text className={classes.navLinkLabel}>{view.name}</Text>
+					</Group>
+				)}
 			</NavLink>
-		);
+		));
 	}
 
 	const FOOTER_KEY = 'footer[0]';
@@ -181,7 +214,7 @@ export default function () {
 			header={{ height: 60 }}
 			footer={showFooter ? { height: 60 } : undefined}
 			navbar={{ width: 200, breakpoint: 'sm', collapsed: { mobile: !mobileNavOpened, desktop: !desktopNavOpened } }}
-			aside={{ width: 300, breakpoint: 'md', collapsed: { desktop: false, mobile: true } }}
+			aside={{ width: 300, breakpoint: 'md', collapsed: { desktop: !tipsVisible, mobile: true } }}
 			className={classes.appShell}>
 			<AppShell.Main>
 				{usingCustomTitleBar && <Space h='xl' />}
@@ -197,22 +230,50 @@ export default function () {
 					<ScrollToTop scroller={scroller} bottom={showFooter ? 70 : 20} />
 				</SimpleBar>
 			</AppShell.Main>
-			<AppShell.Header data-tauri-drag-region p='md' className={classes.header}>
-				<Group h='100%'>
-					<Burger hiddenFrom='sm' opened={mobileNavOpened} onClick={toggleMobileNav} size='sm' />
-					<Burger visibleFrom='sm' opened={desktopNavOpened} onClick={toggleDesktopNav} size='sm' />
-					<Text>HEADER_TITLE</Text>
-				</Group>
-				<Group className={classes.headerRightItems} h='110%'>
-					<LanguageHeaders />
-					<ActionIcon id='toggle-theme' title='Ctrl + J' variant='default' onClick={toggleColorScheme} size={30}>
-						{/* icon to show based on colorScheme */}
-						{colorScheme === 'dark' ? <IoSunnySharp size={'1.5em'} /> : <BsMoonStarsFill />}
-					</ActionIcon>
+			<AppShell.Header data-tauri-drag-region p='sm' className={classes.header}>
+				<Group justify='space-between' align='center' h='100%' className={classes.headerContent}>
+					<Group gap='sm' align='center'>
+						<Burger hiddenFrom='sm' opened={mobileNavOpened} onClick={toggleMobileNav} size='sm' />
+						<Burger visibleFrom='sm' opened={desktopNavOpened} onClick={toggleDesktopNav} size='sm' />
+						<Group gap='sm' align='center' className={classes.brand}>
+							<AppIconGraphic size={34} />
+							<div>
+								<Text className={classes.brandTitle}>Founder's Dilemma</Text>
+								<Text size='xs' className={classes.brandTagline}>Compound your founder instincts</Text>
+							</div>
+						</Group>
+					</Group>
+					<Group gap='md' align='center'>
+						<Group gap={4} align='center' className={classes.languageSwitcher}>
+							<LanguageHeaders />
+						</Group>
+						<Tooltip label={tipsVisible ? 'Hide quick tips' : 'Show quick tips'} position='bottom' withArrow>
+						<ActionIcon
+							variant='filled'
+							color={accentMantineColor}
+							onClick={toggleTips}
+							size={34}
+							className={classes.headerAction}
+						>
+								<LuInfo size='1.2em' />
+							</ActionIcon>
+						</Tooltip>
+						<Tooltip label='Toggle theme (Ctrl + J)' position='bottom' withArrow>
+							<ActionIcon
+								id='toggle-theme'
+								variant='filled'
+								color={colorScheme === 'dark' ? 'yellow' : 'blue'}
+								onClick={toggleColorScheme}
+								size={34}
+							>
+								{colorScheme === 'dark' ? <IoSunnySharp size='1.4em' /> : <BsMoonStarsFill size='1.2em' />}
+							</ActionIcon>
+						</Tooltip>
+					</Group>
 				</Group>
 			</AppShell.Header>
 
-			<AppShell.Navbar className={classes.titleBarAdjustedHeight} h='100%' w={{ sm: 200 }} p='xs' hidden={!mobileNavOpened}>
+			<AppShell.Navbar className={`${classes.titleBarAdjustedHeight} ${classes.navbar}`} h='100%' w={{ sm: 200 }} p='xs' hidden={!mobileNavOpened}>
 				<AppShell.Section grow><NavLinks /></AppShell.Section>
 				<AppShell.Section>
 					{/* Bottom of Navbar Example: https://github.com/mantinedev/mantine/blob/master/src/mantine-demos/src/demos/core/AppShell/_user.tsx */}
@@ -220,8 +281,19 @@ export default function () {
 				</AppShell.Section>
 			</AppShell.Navbar >
 
-			<AppShell.Aside className={classes.titleBarAdjustedHeight} p='md'>
-				<Text>Right Side. Use for help, support, quick action menu? For example, if we were building a trading app, we could use the aside for the trade parameters while leaving the main UI with the data</Text>
+			<AppShell.Aside className={classes.titleBarAdjustedHeight} p='md' hidden={!tipsVisible}>
+				{tipsVisible && (
+					<Paper withBorder radius='md' p='md' className={classes.quickTips}>
+						<Stack gap='xs'>
+							<Text fw={600} size='sm' className={classes.quickTipsTitle}>Quick Tips</Text>
+							<Stack gap={6} className={classes.quickTipsList}>
+								<Text size='xs' c='dimmed'>Press H to open the in-game help modal while planning your week.</Text>
+								<Text size='xs' c='dimmed'>Use the Configuration panel to set your preferred difficulty and dashboard layout.</Text>
+								<Text size='xs' c='dimmed'>Toggle the theme here or hit Ctrl + J to switch between light and dark modes.</Text>
+							</Stack>
+						</Stack>
+					</Paper>
+				)}
 			</AppShell.Aside >
 
 			{showFooter &&

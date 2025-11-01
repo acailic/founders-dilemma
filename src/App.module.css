@@ -21,7 +21,8 @@
 }
 
 .navLinkActive {
-    background-color: light-dark(var(--mantine-color-gray-2), var(--mantine-color-dark-5));
+    background-color: light-dark(var(--fd-accent-surface, var(--mantine-color-gray-2)), var(--mantine-color-dark-5));
+    border: 1px solid light-dark(var(--fd-accent-border, transparent), transparent);
 }
 
 .navLinkInactive:hover {
@@ -39,6 +40,10 @@
     align-items: center;
     height: 100%;
     margin-top: var(--titlebar-height);
+    background: linear-gradient(90deg, var(--fd-accent-gradient-start, var(--mantine-color-teal-6)), var(--fd-accent-gradient-end, var(--mantine-color-blue-6)));
+    border-bottom: 1px solid light-dark(var(--fd-accent-border, var(--mantine-color-teal-5)), var(--mantine-color-dark-5));
+    box-shadow: 0 4px 18px var(--fd-header-shadow, rgba(0, 0, 0, 0.18));
+    color: var(--mantine-color-white);
 }
 
 .headerRightItems {
@@ -60,3 +65,82 @@
 }
 
 /* add custom App CSS here */
+
+.headerContent {
+    width: 100%;
+}
+
+.brandTitle {
+    font-weight: 700;
+    color: var(--mantine-color-white);
+    letter-spacing: 0.02em;
+}
+
+.brandTagline {
+    color: color-mix(in srgb, var(--mantine-color-white) 72%, transparent);
+}
+
+.brand {
+    padding-inline: var(--mantine-spacing-xs);
+}
+
+.languageSwitcher {
+    color: var(--mantine-color-white);
+    font-size: 0.75rem;
+    font-weight: 600;
+    align-items: center;
+    gap: 4px;
+
+    :global(a) {
+        color: inherit !important;
+    }
+
+    :global(span) {
+        color: inherit;
+    }
+}
+
+.navbar {
+    background: light-dark(var(--mantine-color-gray-0), var(--mantine-color-dark-7));
+    border-right: 1px solid light-dark(var(--mantine-color-gray-3), var(--mantine-color-dark-6));
+}
+
+.navLinkContent {
+    display: flex;
+    align-items: center;
+    gap: var(--mantine-spacing-sm);
+}
+
+.navLinkLabel {
+    font-weight: 600;
+}
+
+.navIcon {
+    transition: transform 260ms ease;
+}
+
+.navLinkActive .navIcon {
+    transform: translateY(-1px);
+}
+
+.headerAction {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.quickTips {
+    background: light-dark(var(--mantine-color-white), var(--mantine-color-dark-6));
+    background-image: linear-gradient(180deg, var(--fd-accent-surface, rgba(0, 0, 0, 0.04)), transparent);
+    border-color: light-dark(var(--fd-accent-border, var(--mantine-color-gray-3)), var(--mantine-color-dark-5));
+    box-shadow: 0 10px 22px var(--fd-header-shadow, rgba(0, 0, 0, 0.14));
+}
+
+.quickTipsTitle {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.quickTipsList {
+    display: flex;
+    flex-direction: column;
+    row-gap: var(--mantine-spacing-xs);
+}

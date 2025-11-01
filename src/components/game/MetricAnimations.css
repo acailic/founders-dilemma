@@ -1,0 +1,253 @@
+/* Value change animations */
+.metric-value {
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Positive changes - green pulse */
+@keyframes positiveChange {
+  0% {
+    background: transparent;
+    transform: scale(1);
+  }
+  25% {
+    background: rgba(64, 192, 87, 0.2);
+    transform: scale(1.05);
+  }
+  50% {
+    background: rgba(64, 192, 87, 0.3);
+    transform: scale(1.08);
+  }
+  75% {
+    background: rgba(64, 192, 87, 0.2);
+    transform: scale(1.05);
+  }
+  100% {
+    background: transparent;
+    transform: scale(1);
+  }
+}
+
+.positive-change {
+  animation: positiveChange 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Negative changes - red flash */
+@keyframes negativeChange {
+  0% {
+    background: transparent;
+    transform: scale(1);
+  }
+  25% {
+    background: rgba(250, 82, 82, 0.2);
+    transform: scale(0.98);
+  }
+  50% {
+    background: rgba(250, 82, 82, 0.3);
+    transform: scale(0.96);
+  }
+  75% {
+    background: rgba(250, 82, 82, 0.2);
+    transform: scale(0.98);
+  }
+  100% {
+    background: transparent;
+    transform: scale(1);
+  }
+}
+
+.negative-change {
+  animation: negativeChange 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Critical metric pulse - continuous for dangerous values */
+@keyframes criticalPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 82, 82, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(250, 82, 82, 0);
+  }
+}
+
+.critical-metric {
+  animation: criticalPulse 2s ease-in-out infinite;
+  border-color: var(--mantine-color-red-6) !important;
+}
+
+/* Warning metric glow */
+@keyframes warningGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px 5px rgba(255, 193, 7, 0);
+  }
+}
+
+.warning-metric {
+  animation: warningGlow 3s ease-in-out infinite;
+  border-color: var(--mantine-color-yellow-6) !important;
+}
+
+/* Excellent metric shimmer */
+@keyframes excellentShimmer {
+  0% {
+    box-shadow: 0 0 0 0 rgba(64, 192, 87, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px 5px rgba(64, 192, 87, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(64, 192, 87, 0.5);
+  }
+}
+
+.excellent-metric {
+  animation: excellentShimmer 4s ease-in-out infinite;
+  border-color: var(--mantine-color-green-6) !important;
+}
+
+/* Stat card hover enhancement */
+.sdv-stat-card {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.sdv-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.sdv-stat-card.clickable:hover {
+  cursor: pointer;
+  border-color: var(--mantine-color-blue-5);
+}
+
+/* Trend indicator animations */
+.trend-indicator {
+  display: inline-block;
+  transition: transform 0.3s ease;
+}
+
+.trend-rising {
+  animation: bounceUp 2s ease-in-out infinite;
+}
+
+.trend-falling {
+  animation: bounceDown 2s ease-in-out infinite;
+}
+
+@keyframes bounceUp {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes bounceDown {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(3px);
+  }
+}
+
+/* Forecast text fade in */
+.forecast-text {
+  opacity: 0.7;
+  transition: opacity 0.3s ease;
+}
+
+.sdv-stat-card:hover .forecast-text {
+  opacity: 1;
+}
+
+/* Number counter animation - numbers roll up */
+@keyframes numberRoll {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.number-roll {
+  animation: numberRoll 0.4s ease-out;
+}
+
+/* Progress bar fill animation */
+.progress-animated {
+  transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Escape velocity badge pulse when close */
+@keyframes victoryPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(64, 192, 87, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px 10px rgba(64, 192, 87, 0);
+  }
+}
+
+.victory-close {
+  animation: victoryPulse 1.5s ease-in-out infinite;
+}
+
+/* Badge appearance animation */
+@keyframes badgePop {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.badge-pop {
+  animation: badgePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Mini chart appearance */
+@keyframes chartFadeIn {
+  from {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+  to {
+    opacity: 1;
+    transform: scaleX(1);
+  }
+}
+
+.chart-fade-in {
+  animation: chartFadeIn 0.6s ease-out;
+  transform-origin: left;
+}
+
+/* Loading skeleton for values */
+@keyframes skeleton {
+  0%, 100% {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  50% {
+    background-color: rgba(0, 0, 0, 0.15);
+  }
+}
+
+.loading-skeleton {
+  animation: skeleton 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}

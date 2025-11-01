@@ -1,0 +1,457 @@
+import { useState, useEffect } from 'react';
+import { Container, Grid, Stack, Title, Button, Text, Alert, Card, Group, Badge, ActionIcon, Tooltip, Tabs } from '@mantine/core';
+import { invoke } from '@tauri-apps/api/core';
+import { useHotkeys } from '@mantine/hooks';
+import StatsPanel from './StatsPanel';
+import ActionSelector from './ActionSelector';
+import HelpModal from './HelpModal';
+import AchievementsPanel from './AchievementsPanel';
+import WeekSummary from './WeekSummary';
+import MetricsSidebar from './MetricsSidebar';
+import CriticalStatusBanner from './CriticalStatusBanner';
+import HistoryView from './HistoryView';
+import WeeklyInsights from './WeeklyInsights';
+import FailureWarnings from './FailureWarnings';
+import CompoundingBonuses from './CompoundingBonuses';
+import EventModal from './EventModal';
+import { LuRotateCcw } from 'react-icons/lu';
+import type { TurnResult, GameEvent, WeeklyInsight, FailureWarning, CompoundingBonus } from '../../types/game-systems';
+
+interface GameState {
+  game_id: string;
+  week: number;
+  difficulty: string;
+  started_at: number;
+  bank: number;
+  burn: number;
+  runway_months: number;
+  focus_slots: number;
+  mrr: number;
+  wau: number;
+  wau_growth_rate: number;
+  churn_rate: number;
+  morale: number;
+  reputation: number;
+  nps: number;
+  tech_debt: number;
+  compliance_risk: number;
+  velocity: number;
+  founder_equity: number;
+  option_pool: number;
+  momentum: number;
+  escape_velocity_progress: {
+    revenue_covers_burn: boolean;
+    growth_sustained: boolean;
+    customer_love: boolean;
+    founder_healthy: boolean;
+    streak_weeks: number;
+  };
+  history: Array<{
+    week: number;
+    bank: number;
+    mrr: number;
+    burn: number;
+    wau: number;
+    morale: number;
+    reputation: number;
+    momentum: number;
+  }>;
+}
+
+interface Action {
+  ShipFeature?: { quality: string };
+  FounderLedSales?: { call_count: number };
+  Hire?: null;
+  Fundraise?: { target: number };
+  TakeBreak?: null;
+}
+
+interface GameDashboardProps {
+  gameState: GameState;
+  onStateUpdate: (state: GameState) => void;
+  onResetGame?: () => void;
+}
+
+function formatCurrency(value: number): string {
+  if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+  if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
+  return `$${value.toFixed(0)}`;
+}
+
+export default function GameDashboard({ gameState, onStateUpdate, onResetGame }: GameDashboardProps) {
+  const [selectedActions, setSelectedActions] = useState<Action[]>([]);
+  const [processing, setProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [helpOpened, setHelpOpened] = useState(false);
+  const [weekSummaryOpened, setWeekSummaryOpened] = useState(false);
+  const [previousState, setPreviousState] = useState<GameState | null>(null);
+  const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('dashboard');
+
+  // New game system states
+  const [insights, setInsights] = useState<WeeklyInsight[]>([]);
+  const [warnings, setWarnings] = useState<FailureWarning[]>([]);
+  const [compoundingBonuses, setCompoundingBonuses] = useState<CompoundingBonus[]>([]);
+  const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
+  const [eventModalOpened, setEventModalOpened] = useState(false);
+
+  const handleResetGame = () => {
+    setSelectedActions([]);
+    setPreviousState(null);
+    onResetGame?.();
+  };
+
+  const handleTakeTurn = async () => {
+    if (selectedActions.length === 0) {
+      setError('Select at least one action!');
+      return;
+    }
+
+    setProcessing(true);
+    setError(null);
+
+    try {
+      // Save current state before taking turn
+      setPreviousState(gameState);
+
+      // Call enhanced take_turn that returns TurnResult
+      const result = await invoke<TurnResult>('take_turn', {
+        state: gameState,
+        actions: selectedActions,
+      });
+
+      // Update game state
+      onStateUpdate(result.state);
+      setSelectedActions([]);
+
+      // Store new game systems data
+      setInsights(result.insights);
+      setWarnings(result.warnings);
+      setCompoundingBonuses(result.compounding_bonuses);
+
+      // Check for events
+      if (result.events.length > 0) {
+        setCurrentEvent(result.events[0]);
+        setEventModalOpened(true);
+      } else {
+        // No events, show week summary
+        setWeekSummaryOpened(true);
+      }
+    } catch (err) {
+      setError(err as string);
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleEventChoice = async (choiceIndex: number) => {
+    if (!currentEvent) return;
+
+    try {
+      const newState = await invoke<GameState>('apply_event_choice', {
+        state: gameState,
+        eventId: currentEvent.id,
+        choiceIndex,
+        event: currentEvent,
+      });
+
+      onStateUpdate(newState);
+      setEventModalOpened(false);
+      setCurrentEvent(null);
+
+      // After handling event, show week summary
+      setWeekSummaryOpened(true);
+    } catch (err) {
+      setError(err as string);
+    }
+  };
+
+  const handleEventClose = () => {
+    setEventModalOpened(false);
+    setCurrentEvent(null);
+    // Show week summary after closing event
+    setWeekSummaryOpened(true);
+  };
+
+  const focusUsed = selectedActions.reduce((total, action) => {
+    // Calculate focus cost (simplified - should match Rust logic)
+    if ('ShipFeature' in action) return total + 1;
+    if ('FounderLedSales' in action) return total + 1;
+    if ('Hire' in action) return total + 2;
+    if ('Fundraise' in action) return total + 2;
+    if ('TakeBreak' in action) return total + 1;
+    return total;
+  }, 0);
+
+  const focusRemaining = gameState.focus_slots - focusUsed;
+
+  // Keyboard shortcuts
+  useHotkeys([
+    ['Enter', () => {
+      if (selectedActions.length > 0 && focusRemaining >= 0 && !processing && activeTab === 'plan') {
+        handleTakeTurn();
+      }
+    }],
+    ['Escape', () => setSelectedActions([])],
+    ['h', () => setHelpOpened(true)],
+    ['?', () => setHelpOpened(true)],
+    ['1', () => setActiveTab('dashboard')],
+    ['2', () => setActiveTab('plan')],
+    ['3', () => setActiveTab('history')],
+    ['4', () => setActiveTab('achievements')],
+  ]);
+
+  return (
+    <Container size="xl" py="md">
+      <Stack gap="lg">
+        {/* Header Card */}
+        <Card withBorder padding="lg">
+          <Group justify="space-between" align="center">
+            <Stack gap="xs">
+              <Title order={1} size="h2">Founder's Dilemma</Title>
+              <Group gap="md">
+                <Badge size="lg" variant="filled">Week {gameState.week}</Badge>
+                <Badge size="lg" variant="light">{gameState.difficulty.toUpperCase()}</Badge>
+              </Group>
+            </Stack>
+            <Group gap="lg">
+              <Stack gap="xs" align="flex-end">
+                <Text size="sm" c="dimmed">Focus Slots</Text>
+                <Badge
+                  size="xl"
+                  color={focusRemaining >= 2 ? 'green' : focusRemaining >= 1 ? 'yellow' : 'red'}
+                >
+                  {focusRemaining} / {gameState.focus_slots}
+                </Badge>
+              </Stack>
+              {onResetGame && (
+                <Tooltip label="Reset progress and return to difficulty selection">
+                  <ActionIcon
+                    size="xl"
+                    variant="light"
+                    color="red"
+                    onClick={handleResetGame}
+                  >
+                    <LuRotateCcw size="1.4em" />
+                  </ActionIcon>
+                </Tooltip>
+              )}
+              <Tooltip label="Help (H or ?)">
+                <ActionIcon
+                  size="xl"
+                  variant="filled"
+                  color="blue"
+                  onClick={() => setHelpOpened(true)}
+                >
+                  <Text size="xl">❓</Text>
+                </ActionIcon>
+              </Tooltip>
+            </Group>
+          </Group>
+        </Card>
+
+        {/* Horizontal Tab Navigation */}
+        <Tabs value={activeTab} onChange={(value) => setActiveTab(value || 'dashboard')}>
+          <Tabs.List>
+            <Tabs.Tab value="dashboard" leftSection="📊">
+              Dashboard
+              <Badge size="xs" ml="xs" variant="light">1</Badge>
+            </Tabs.Tab>
+            <Tabs.Tab value="plan" leftSection="🎯">
+              Plan Week
+              <Badge size="xs" ml="xs" variant="light">2</Badge>
+            </Tabs.Tab>
+            <Tabs.Tab value="history" leftSection="📈">
+              History
+              <Badge size="xs" ml="xs" variant="light">3</Badge>
+            </Tabs.Tab>
+            <Tabs.Tab value="achievements" leftSection="🏆">
+              Achievements
+              <Badge size="xs" ml="xs" variant="light">4</Badge>
+            </Tabs.Tab>
+          </Tabs.List>
+
+          {/* Dashboard Tab - Stats Only */}
+          <Tabs.Panel value="dashboard" pt="md">
+            <Grid gutter="lg">
+              <Grid.Col span={9}>
+                <Stack gap="lg">
+                  {/* Critical Status Banner */}
+                  <CriticalStatusBanner gameState={gameState} />
+
+                  {/* Compounding Bonuses - Show when active */}
+                  {compoundingBonuses.length > 0 && (
+                    <CompoundingBonuses bonuses={compoundingBonuses} />
+                  )}
+
+                  {/* Failure Warnings - Show when present */}
+                  {warnings.length > 0 && (
+                    <FailureWarnings warnings={warnings} />
+                  )}
+
+                  {/* Weekly Insights - Educational feedback */}
+                  {insights.length > 0 && (
+                    <WeeklyInsights insights={insights} />
+                  )}
+
+                  {/* Stats Panel */}
+                  <StatsPanel gameState={gameState} onMetricClick={setSelectedMetric} />
+
+                  {/* Call to Action */}
+                  <Card withBorder padding="lg" style={{ background: 'var(--mantine-color-blue-0)' }}>
+                    <Group justify="space-between" align="center">
+                      <Stack gap="xs">
+                        <Text size="lg" fw={700}>Ready to plan your next week?</Text>
+                        <Text size="sm" c="dimmed">
+                          Review your metrics, then head to the Plan Week tab to choose actions
+                        </Text>
+                      </Stack>
+                      <Button
+                        size="lg"
+                        onClick={() => setActiveTab('plan')}
+                        rightSection="→"
+                      >
+                        Go to Planning
+                      </Button>
+                    </Group>
+                  </Card>
+                </Stack>
+              </Grid.Col>
+
+              {/* Right Sidebar */}
+              <Grid.Col span={3}>
+                <MetricsSidebar gameState={gameState} selectedMetric={selectedMetric} />
+              </Grid.Col>
+            </Grid>
+          </Tabs.Panel>
+
+          {/* Plan Week Tab - Actions Only */}
+          <Tabs.Panel value="plan" pt="md">
+            <Stack gap="lg">
+              {/* Error Alert */}
+              {error && (
+                <Alert color="red" onClose={() => setError(null)} withCloseButton>
+                  {error}
+                </Alert>
+              )}
+
+              {/* Quick Stats Summary */}
+              <Card withBorder padding="md">
+                <Group justify="space-between">
+                  <Group gap="xl">
+                    <Stack gap={4}>
+                      <Text size="xs" c="dimmed">Bank</Text>
+                      <Text size="lg" fw={700}>{formatCurrency(gameState.bank)}</Text>
+                    </Stack>
+                    <Stack gap={4}>
+                      <Text size="xs" c="dimmed">Burn/mo</Text>
+                      <Text size="lg" fw={700}>{formatCurrency(gameState.burn)}</Text>
+                    </Stack>
+                    <Stack gap={4}>
+                      <Text size="xs" c="dimmed">Runway</Text>
+                      <Text size="lg" fw={700} c={gameState.runway_months > 6 ? 'green' : gameState.runway_months > 3 ? 'yellow' : 'red'}>
+                        {gameState.runway_months.toFixed(1)} mo
+                      </Text>
+                    </Stack>
+                    <Stack gap={4}>
+                      <Text size="xs" c="dimmed">Morale</Text>
+                      <Text size="lg" fw={700}>{gameState.morale.toFixed(0)}%</Text>
+                    </Stack>
+                  </Group>
+                  <Button
+                    variant="subtle"
+                    onClick={() => setActiveTab('dashboard')}
+                    leftSection="←"
+                  >
+                    View Dashboard
+                  </Button>
+                </Group>
+              </Card>
+
+              {/* Action Selector */}
+              <Card withBorder padding="lg">
+                <Stack gap="md">
+                  <Group justify="space-between" align="center">
+                    <Title order={2}>Plan Your Week {gameState.week + 1}</Title>
+                    {selectedActions.length > 0 && (
+                      <Badge size="lg" color="blue">
+                        {selectedActions.length} action{selectedActions.length !== 1 ? 's' : ''} selected
+                      </Badge>
+                    )}
+                  </Group>
+                  <ActionSelector
+                    selectedActions={selectedActions}
+                    onSelectAction={(action) => setSelectedActions([...selectedActions, action])}
+                    onRemoveAction={(index) =>
+                      setSelectedActions(selectedActions.filter((_, i) => i !== index))
+                    }
+                    focusRemaining={focusRemaining}
+                  />
+                </Stack>
+              </Card>
+
+              {/* Selected Actions Summary */}
+              {selectedActions.length > 0 && (
+                <Card withBorder padding="md">
+                  <Stack gap="xs">
+                    <Text size="sm" fw={700}>
+                      📋 Your Plan:
+                    </Text>
+                    {selectedActions.map((action, index) => (
+                      <Text key={index} size="sm">
+                        {index + 1}.{' '}
+                        {Object.keys(action)[0].replace(/([A-Z])/g, ' $1').trim()}
+                      </Text>
+                    ))}
+                  </Stack>
+                </Card>
+              )}
+
+              {/* Turn Button */}
+              <Button
+                size="xl"
+                onClick={handleTakeTurn}
+                disabled={selectedActions.length === 0 || focusRemaining < 0}
+                loading={processing}
+                fullWidth
+              >
+                {processing ? 'Processing Week...' : `Execute Week ${gameState.week + 1} (Enter)`}
+              </Button>
+            </Stack>
+          </Tabs.Panel>
+
+          {/* History Tab */}
+          <Tabs.Panel value="history" pt="md">
+            <HistoryView gameState={gameState} />
+          </Tabs.Panel>
+
+          {/* Achievements Tab */}
+          <Tabs.Panel value="achievements" pt="md">
+            <AchievementsPanel gameState={gameState} />
+          </Tabs.Panel>
+        </Tabs>
+
+        {/* Help Modal */}
+        <HelpModal opened={helpOpened} onClose={() => setHelpOpened(false)} />
+
+        {/* Event Modal - Strategic dilemmas */}
+        <EventModal
+          opened={eventModalOpened}
+          event={currentEvent}
+          onClose={handleEventClose}
+          onChoiceSelected={handleEventChoice}
+        />
+
+        {/* Week Summary Modal */}
+        {previousState && (
+          <WeekSummary
+            opened={weekSummaryOpened}
+            onClose={() => setWeekSummaryOpened(false)}
+            previousState={previousState}
+            currentState={gameState}
+          />
+        )}
+      </Stack>
+    </Container>
+  );
+}

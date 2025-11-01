@@ -2,7 +2,6 @@ import i18n from 'i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import { initReactI18next } from 'react-i18next';
 import en from './en.json';
-import fr from './fr.json';
 
 export const defaultLng = 'en';
 export const defaultNS = 'translations';
@@ -10,9 +9,6 @@ export const defaultNS = 'translations';
 export const resources = {
 	en: {
 		[defaultNS]: en
-	},
-	fr: {
-		[defaultNS]: fr
 	}
 }
 
