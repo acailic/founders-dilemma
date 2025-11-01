@@ -1,0 +1,57 @@
+   0.654258541s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app_lib"}: cargo::core::compiler::fingerprint: stale: changed "/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/target/debug/build/app-56da04747ba3c8ec/out/137ce811ee871fb3c31af8fbeadbdb6f751a0548e55e88a2c4b055ed0c322a2c"
+   0.654277708s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app_lib"}: cargo::core::compiler::fingerprint:           (vs) "/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/target/debug/.fingerprint/app-3263851e7308c3fd/dep-lib-app_lib"
+   0.654280000s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app_lib"}: cargo::core::compiler::fingerprint:                FileTime { seconds: 1761962015, nanos: 262066969 } < FileTime { seconds: 1761962015, nanos: 627113232 }
+   0.655800833s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app_lib"}: cargo::core::compiler::fingerprint: fingerprint dirty for app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri)/Check { test: false }/TargetInner { ..: lib_target("app_lib", ["staticlib", "cdylib", "rlib"], "/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/src/lib.rs", Edition2021) }
+   0.655837416s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app_lib"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleItem(ChangedFile { reference: "/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/target/debug/.fingerprint/app-3263851e7308c3fd/dep-lib-app_lib", reference_mtime: FileTime { seconds: 1761962015, nanos: 262066969 }, stale: "/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/target/debug/build/app-56da04747ba3c8ec/out/137ce811ee871fb3c31af8fbeadbdb6f751a0548e55e88a2c4b055ed0c322a2c", stale_mtime: FileTime { seconds: 1761962015, nanos: 627113232 } }))
+   0.724933541s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app_lib"}: cargo::core::compiler::fingerprint: fingerprint error for app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri)/Check { test: true }/TargetInner { ..: lib_target("app_lib", ["staticlib", "cdylib", "rlib"], "/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/src/lib.rs", Edition2021) }
+   0.724950083s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app_lib"}: cargo::core::compiler::fingerprint:     err: failed to read `/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/target/debug/.fingerprint/app-e7011fe27b81eee3/test-lib-app_lib`
+
+Caused by:
+    No such file or directory (os error 2)
+
+Stack backtrace:
+   0: std::backtrace::Backtrace::create
+   1: cargo_util::paths::read_bytes
+   2: cargo_util::paths::read
+   3: cargo::core::compiler::fingerprint::_compare_old_fingerprint
+   4: cargo::core::compiler::fingerprint::prepare_target
+   5: cargo::core::compiler::compile
+   6: <cargo::core::compiler::build_runner::BuildRunner>::compile
+   7: cargo::ops::cargo_compile::compile_ws
+   8: cargo::ops::cargo_compile::compile_with_exec
+   9: cargo::ops::cargo_compile::compile
+  10: cargo::commands::check::exec
+  11: <cargo::cli::Exec>::exec
+  12: cargo::main
+  13: std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
+  14: std::rt::lang_start::<()>::{closure#0}
+  15: std::rt::lang_start_internal
+  16: _main
+   0.729934875s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app"}: cargo::core::compiler::fingerprint: fingerprint dirty for app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri)/Check { test: false }/TargetInner { name: "app", doc: true, ..: with_path("/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/src/main.rs", Edition2021) }
+   0.729947666s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app"}: cargo::core::compiler::fingerprint:     dirty: FsStatusOutdated(StaleDepFingerprint { name: "app_lib" })
+   0.731352583s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app"}: cargo::core::compiler::fingerprint: fingerprint error for app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri)/Check { test: true }/TargetInner { name: "app", doc: true, ..: with_path("/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/src/main.rs", Edition2021) }
+   0.731361083s  INFO prepare_target{force=false package_id=app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri) target="app"}: cargo::core::compiler::fingerprint:     err: failed to read `/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri/target/debug/.fingerprint/app-78472fc6f5003f7b/test-bin-app`
+
+Caused by:
+    No such file or directory (os error 2)
+
+Stack backtrace:
+   0: std::backtrace::Backtrace::create
+   1: cargo_util::paths::read_bytes
+   2: cargo_util::paths::read
+   3: cargo::core::compiler::fingerprint::_compare_old_fingerprint
+   4: cargo::core::compiler::fingerprint::prepare_target
+   5: cargo::core::compiler::compile
+   6: <cargo::core::compiler::build_runner::BuildRunner>::compile
+   7: cargo::ops::cargo_compile::compile_ws
+   8: cargo::ops::cargo_compile::compile_with_exec
+   9: cargo::ops::cargo_compile::compile
+  10: cargo::commands::check::exec
+  11: <cargo::cli::Exec>::exec
+  12: cargo::main
+  13: std::sys::backtrace::__rust_begin_short_backtrace::<fn(), ()>
+  14: std::rt::lang_start::<()>::{closure#0}
+  15: std::rt::lang_start_internal
+  16: _main
+    Checking app v0.0.0 (/Users/aleksandarilic/Documents/github/acailic/founders-dilemma/src-tauri)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.23s

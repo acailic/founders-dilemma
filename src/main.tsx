@@ -5,6 +5,8 @@ import { ErrorBoundary } from 'react-error-boundary';
 import App from './App.js';
 import Providers from './Providers.jsx';
 import './translations/i18n.js'; // for internationalization (translations)
+import './styles/stardew.css'; // Stardew Valley pixel art theme
+import './styles/theme-enhancements.css'; // Enhanced visual polish and modern UI
 import FallbackAppRender from './views/FallbackErrorBoundary.js';
 
 const root = createRoot(document.getElementById('root')!);

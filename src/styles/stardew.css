@@ -1,0 +1,470 @@
+/* Modern accessible theme foundation */
+
+:root {
+  color: var(--fd-text-primary);
+  background-color: var(--fd-surface-0);
+  /* Legacy variable aliases to avoid breakage while components migrate */
+  --sdv-brown-dark: var(--fd-border-strong);
+  --sdv-brown-medium: var(--fd-border-subtle);
+  --sdv-brown-light: var(--fd-surface-2);
+  --sdv-cream: var(--fd-surface-1);
+  --sdv-green-dark: var(--fd-positive-strong);
+  --sdv-green-medium: var(--fd-positive-border);
+  --sdv-green-light: var(--fd-positive-surface);
+  --sdv-blue-medium: var(--fd-info-strong);
+  --sdv-gold: var(--fd-warning-strong);
+  --sdv-red: var(--fd-danger-strong);
+  --sdv-orange: var(--fd-warning-border);
+  --sdv-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+  --sdv-shadow-large: 0 18px 44px rgba(15, 23, 42, 0.12);
+  --sdv-border: 2px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--fd-font-family);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--fd-text-primary);
+  background: var(--fd-surface-0);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body h1,
+body h2,
+body h3,
+body h4,
+body h5,
+body h6 {
+  margin-top: 0;
+  color: var(--fd-text-primary);
+  font-weight: 600;
+}
+
+body p {
+  margin-top: 0;
+  color: var(--fd-text-secondary);
+}
+
+a {
+  color: var(--fd-info-strong);
+  transition: color 0.2s ease;
+}
+
+a:hover,
+a:focus {
+  color: var(--fd-accent-soft-border);
+}
+
+.mantine-AppShell-root {
+  background: var(--fd-surface-0) !important;
+  color: var(--fd-text-primary) !important;
+}
+
+.mantine-AppShell-navbar {
+  background: var(--fd-surface-1) !important;
+  border-right: 1px solid var(--fd-border-subtle) !important;
+}
+
+.mantine-AppShell-main {
+  background: linear-gradient(180deg, var(--fd-surface-0) 0%, var(--fd-surface-2) 100%) !important;
+}
+
+.mantine-Modal-title {
+  color: var(--fd-text-primary) !important;
+}
+
+.mantine-Modal-header {
+  background: var(--fd-surface-1) !important;
+  border-bottom: 1px solid var(--fd-border-subtle) !important;
+}
+
+.mantine-Modal-body {
+  background: var(--fd-surface-1) !important;
+}
+
+.mantine-Button-root {
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.08) !important;
+}
+
+.mantine-Button-root[data-variant="filled"] {
+  background: var(--fd-positive-strong) !important;
+}
+
+.mantine-Button-root[data-variant="filled"]:hover {
+  background: var(--fd-positive-border) !important;
+}
+
+.mantine-Button-root[data-variant="light"] {
+  background: var(--fd-accent-soft) !important;
+  color: var(--fd-text-primary) !important;
+}
+
+.mantine-Button-root[data-variant="light"]:hover {
+  background: var(--fd-accent-soft-border) !important;
+  color: var(--fd-text-inverse) !important;
+}
+
+.mantine-Progress-root {
+  border-radius: 999px !important;
+  background: rgba(15, 23, 42, 0.08) !important;
+}
+
+.mantine-Progress-section[data-color="green"] {
+  background: var(--fd-positive-strong) !important;
+}
+
+.sdv-border {
+  background: var(--fd-surface-1);
+  border: 1px solid var(--fd-border-subtle);
+  border-radius: 16px;
+  box-shadow: var(--fd-card-shadow);
+}
+
+.sdv-border-double {
+  background: var(--fd-surface-1);
+  border: 2px solid var(--fd-border-strong);
+  border-radius: 18px;
+  box-shadow: var(--fd-card-shadow);
+}
+
+/* Green progress */
+.mantine-Progress-section[data-color="green"] {
+  background: var(--fd-positive-strong) !important;
+}
+
+/* Yellow progress */
+.mantine-Progress-section[data-color="yellow"] {
+  background: var(--fd-warning-strong) !important;
+}
+
+/* Red progress */
+.mantine-Progress-section[data-color="red"] {
+  background: var(--fd-danger-strong) !important;
+}
+
+/* Status badges */
+.mantine-Badge-root {
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em;
+  padding: 6px 12px !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mantine-Badge-root[data-variant="filled"][data-color="blue"] {
+  background: var(--fd-info-strong) !important;
+  color: var(--fd-text-inverse) !important;
+}
+
+.mantine-Badge-root[data-variant="filled"][data-color="red"] {
+  background: var(--fd-danger-strong) !important;
+  color: var(--fd-text-inverse) !important;
+}
+
+.mantine-Badge-root[data-variant="light"] {
+  background: var(--fd-accent-soft) !important;
+  color: var(--fd-text-primary) !important;
+}
+
+.sdv-action-card {
+  background: var(--fd-surface-1);
+  border: 1px solid var(--fd-border-subtle);
+  border-radius: 16px;
+  box-shadow: var(--fd-card-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  cursor: pointer;
+}
+
+.sdv-action-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--fd-border-strong);
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.12);
+}
+
+.sdv-action-card:active {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.sdv-action-card[data-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Stat cards */
+.sdv-stat-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--fd-surface-1);
+  border: 1px solid var(--fd-border-subtle);
+  border-radius: 18px;
+  padding-top: calc(var(--mantine-spacing-md) + 6px);
+  box-shadow: var(--fd-card-shadow);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sdv-stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 6px;
+  background: linear-gradient(90deg, var(--fd-accent-gradient-start), var(--fd-accent-gradient-end));
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+}
+
+.sdv-stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 36px rgba(15, 23, 42, 0.16);
+}
+
+.sdv-stat-card.clickable:hover {
+  border-color: var(--fd-info-border);
+}
+
+/* Currency formatting */
+.sdv-currency {
+  color: var(--fd-warning-strong);
+  font-weight: 700;
+}
+
+/* Danger colors */
+.sdv-danger {
+  color: var(--fd-danger-strong) !important;
+  font-weight: 600;
+}
+
+.sdv-warning {
+  color: var(--fd-warning-strong) !important;
+  font-weight: 600;
+}
+
+.sdv-success {
+  color: var(--fd-positive-strong) !important;
+  font-weight: 600;
+}
+
+.sdv-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--fd-accent-soft);
+  color: var(--fd-text-primary);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+.sdv-tag[data-variant="success"] {
+  background: var(--fd-positive-surface);
+  color: var(--fd-positive-strong);
+  border: 1px solid var(--fd-positive-border);
+}
+
+.sdv-tag[data-variant="warning"] {
+  background: var(--fd-warning-surface);
+  color: var(--fd-warning-strong);
+  border: 1px solid var(--fd-warning-border);
+}
+
+.sdv-tag[data-variant="danger"] {
+  background: var(--fd-danger-surface);
+  color: var(--fd-danger-strong);
+  border: 1px solid var(--fd-danger-border);
+}
+
+.mini-chart-grid line {
+  stroke: rgba(15, 23, 42, 0.12);
+}
+
+/* Focus indicator (for accessibility) */
+*:focus-visible {
+  outline: 3px solid rgba(63, 114, 214, 0.4) !important;
+  outline-offset: 3px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--fd-surface-2);
+  border: 1px solid var(--fd-border-subtle);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--fd-accent-soft-border);
+  border: 2px solid var(--fd-surface-2);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--fd-border-strong);
+}
+
+.mantine-Table-root {
+  background: var(--fd-surface-1);
+  border: 1px solid var(--fd-border-subtle);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: var(--fd-card-shadow);
+}
+
+.mantine-Table-thead tr {
+  background: var(--fd-accent-soft);
+  color: var(--fd-text-primary);
+}
+
+.mantine-Table-tbody tr + tr > td {
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.mantine-TextInput-input,
+.mantine-Select-input,
+.mantine-Textarea-input {
+  background: var(--fd-surface-1);
+  border-radius: 12px;
+  border: 1px solid var(--fd-border-subtle);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mantine-TextInput-input:focus,
+.mantine-Select-input:focus,
+.mantine-Textarea-input:focus {
+  border-color: var(--fd-info-border);
+  box-shadow: 0 0 0 3px rgba(63, 114, 214, 0.16);
+}
+
+.mantine-Checkbox-input {
+  border-radius: 6px;
+  border: 1px solid var(--fd-border-subtle);
+}
+
+.mantine-Checkbox-input:checked {
+  background: var(--fd-positive-strong);
+  border-color: var(--fd-positive-strong);
+}
+
+.mantine-Notification-root {
+  border-radius: 18px;
+  border: 1px solid var(--fd-border-subtle);
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.18);
+}
+
+.mantine-Notification-root[data-color="teal"] {
+  background: var(--fd-positive-surface);
+  color: var(--fd-text-primary);
+}
+
+.mantine-Notification-root[data-color="orange"] {
+  background: var(--fd-warning-surface);
+  color: var(--fd-text-primary);
+}
+
+.mantine-Notification-root[data-color="red"] {
+  background: var(--fd-danger-surface);
+  color: var(--fd-text-primary);
+}
+
+/* ========================================
+   ENHANCED ANIMATIONS & INTERACTIONS
+   ======================================== */
+
+/* Keyframe Animations */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 6px rgba(63, 114, 214, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(63, 114, 214, 0.7); }
+}
+
+/* Subtle pulse utility */
+.pulse {
+  animation: pulse 2s infinite;
+}
+
+.mantine-Button-root[data-loading="true"] {
+  animation: pulse 1.5s infinite;
+}
+
+.mantine-Progress-section {
+  transition: width 0.5s ease-out;
+}
+
+/* Text selection */
+::selection {
+  background: var(--fd-info-border);
+  color: var(--fd-text-inverse);
+}
+
+/* Disabled button state */
+.mantine-Button-root:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  filter: grayscale(0.5);
+}
+
+/* Focus ring enhancement */
+.mantine-Card-root:focus-within {
+  outline: 3px solid rgba(63, 114, 214, 0.35);
+  outline-offset: 2px;
+}
+
+/* Smooth transitions for all interactive elements */
+button, .mantine-Card-root, .mantine-Badge-root, .mantine-Button-root {
+  transition: all 0.2s ease-out;
+}
+
+/* Title animations */
+.mantine-Title-root {
+  animation: slideIn 0.5s ease-out;
+}
+
+/* Container fade in */
+.mantine-Container-root {
+  animation: slideIn 0.6s ease-out;
+}

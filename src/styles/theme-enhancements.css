@@ -1,0 +1,501 @@
+/* ========================================
+   THEME ENHANCEMENTS - Professional Polish
+   ======================================== */
+
+/* Enhanced Color Palette */
+:root {
+  --enhancement-shadow-sm: 0 2px 4px rgba(15, 23, 42, 0.08);
+  --enhancement-shadow-md: 0 8px 18px rgba(15, 23, 42, 0.1);
+  --enhancement-shadow-lg: 0 16px 32px rgba(15, 23, 42, 0.12);
+  --enhancement-gradient-primary: linear-gradient(135deg, var(--fd-accent-gradient-start), var(--fd-accent-gradient-end));
+  --enhancement-gradient-success: linear-gradient(135deg, var(--fd-positive-surface), var(--fd-positive-border));
+  --enhancement-gradient-warning: linear-gradient(135deg, var(--fd-warning-surface), var(--fd-warning-border));
+  --enhancement-gradient-info: linear-gradient(135deg, rgba(63, 114, 214, 0.12), rgba(63, 114, 214, 0.32));
+  --enhancement-glass-bg: rgba(255, 255, 255, 0.12);
+  --enhancement-glass-border: rgba(255, 255, 255, 0.24);
+  --enhancement-glass-blur: blur(12px);
+}
+
+/* ========================================
+   TAB NAVIGATION - Modern & Polished
+   ======================================== */
+
+.mantine-Tabs-root {
+  position: relative;
+}
+
+.mantine-Tabs-list {
+  border: 1px solid var(--fd-border-subtle) !important;
+  border-radius: 16px !important;
+  background: var(--fd-surface-1) !important;
+  padding: 8px !important;
+  box-shadow: var(--enhancement-shadow-md) !important;
+  gap: 8px !important;
+}
+
+.mantine-Tabs-tab {
+  border-radius: 12px !important;
+  background: var(--fd-surface-0) !important;
+  color: var(--fd-text-secondary) !important;
+  font-weight: 600 !important;
+  font-size: 0.875rem !important;
+  padding: 10px 18px !important;
+  transition: all 0.2s ease !important;
+}
+
+.mantine-Tabs-tab:hover {
+  background: var(--fd-accent-soft) !important;
+  color: var(--fd-text-primary) !important;
+  box-shadow: var(--enhancement-shadow-sm) !important;
+}
+
+.mantine-Tabs-tab[data-active="true"] {
+  background: var(--enhancement-gradient-primary) !important;
+  color: var(--fd-text-inverse) !important;
+  box-shadow: var(--enhancement-shadow-md) !important;
+}
+
+.mantine-Tabs-tab[data-active="true"]::after {
+  content: '';
+  position: absolute;
+  inset-inline: 16px;
+  bottom: -8px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--fd-accent-border);
+}
+
+/* Tab panel animations */
+.mantine-Tabs-panel {
+  animation: tabFadeIn 0.3s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================
+   CARDS - Enhanced Visual Hierarchy
+   ======================================== */
+
+/* Primary content cards */
+.mantine-Card-root {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.mantine-Card-root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid transparent;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.mantine-Card-root:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--enhancement-shadow-lg) !important;
+}
+
+.mantine-Card-root:hover::after {
+  opacity: 1;
+}
+
+/* Featured/highlighted cards */
+.card-featured {
+  border: 2px solid var(--fd-accent-border) !important;
+  background: var(--enhancement-gradient-primary) !important;
+  color: var(--fd-text-inverse) !important;
+  box-shadow: var(--enhancement-shadow-lg) !important;
+}
+
+/* Critical cards */
+.card-critical {
+  border-color: var(--fd-danger-strong) !important;
+  box-shadow: 0 0 0 0 rgba(240, 68, 56, 0.3);
+  animation: cardCritical 2.8s ease-in-out infinite;
+}
+
+@keyframes cardCritical {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(240, 68, 56, 0.16);
+  }
+  50% {
+    box-shadow: 0 0 24px 6px rgba(240, 68, 56, 0.2);
+  }
+}
+
+/* ========================================
+   METRIC CARDS - Status-based Styling
+   ======================================== */
+
+/* Excellent state */
+.metric-excellent {
+  background: var(--fd-positive-surface) !important;
+  border-color: var(--fd-positive-border) !important;
+  color: var(--fd-positive-strong) !important;
+}
+
+.metric-excellent::after {
+  content: '✨';
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-size: 16px;
+  animation: sparkle 2.4s ease-in-out infinite;
+}
+
+@keyframes sparkle {
+  0%, 100% { opacity: 0.4; transform: rotate(0deg) scale(1); }
+  50% { opacity: 0.9; transform: rotate(160deg) scale(1.18); }
+}
+
+/* Warning state */
+.metric-warning {
+  background: var(--fd-warning-surface) !important;
+  border-color: var(--fd-warning-border) !important;
+  color: var(--fd-warning-strong) !important;
+}
+
+/* Critical state - already handled above */
+
+/* ========================================
+   BUTTONS - Enhanced Interactions
+   ======================================== */
+
+/* Primary action button */
+.button-primary {
+  background: var(--enhancement-gradient-primary) !important;
+  color: var(--fd-text-inverse) !important;
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--enhancement-shadow-md) !important;
+}
+
+.button-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.45s ease;
+}
+
+.button-primary:hover::before {
+  transform: translateX(100%);
+}
+
+/* Danger button */
+.button-danger {
+  background: linear-gradient(135deg, var(--fd-danger-strong), rgba(180, 35, 24, 0.92)) !important;
+  color: var(--fd-text-inverse) !important;
+  box-shadow: var(--enhancement-shadow-md) !important;
+}
+
+/* Execute button - special styling */
+.execute-button {
+  background: linear-gradient(135deg, var(--fd-warning-surface), var(--fd-warning-strong)) !important;
+  color: var(--fd-text-primary) !important;
+  font-size: 1rem !important;
+  box-shadow: var(--enhancement-shadow-lg) !important;
+  animation: actionPulse 2.2s infinite;
+}
+
+@keyframes actionPulse {
+  0%, 100% {
+    box-shadow: var(--enhancement-shadow-lg);
+  }
+  50% {
+    box-shadow: 0 14px 28px rgba(247, 144, 9, 0.26);
+  }
+}
+
+/* ========================================
+   PROGRESS INDICATORS
+   ======================================== */
+
+/* Enhanced progress bars with gradients */
+.mantine-Progress-section[data-color="green"] {
+  background: linear-gradient(90deg, var(--fd-positive-border), var(--fd-positive-strong)) !important;
+}
+
+.mantine-Progress-section[data-color="red"] {
+  background: linear-gradient(90deg, rgba(240, 68, 56, 0.9), var(--fd-danger-strong)) !important;
+}
+
+.mantine-Progress-section[data-color="yellow"] {
+  background: linear-gradient(90deg, rgba(247, 144, 9, 0.85), var(--fd-warning-strong)) !important;
+}
+
+/* Animated progress */
+.progress-animated {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-animated::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.3), transparent);
+  transform: translateX(-120%);
+  animation: progressShine 1.6s linear infinite;
+}
+
+@keyframes progressShine {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(160%); }
+}
+
+/* ========================================
+   BADGES - Context-aware Colors
+   ======================================== */
+
+.badge-success {
+  background: var(--sdv-green-medium) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(106, 163, 104, 0.4);
+}
+
+.badge-warning {
+  background: var(--sdv-orange) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(230, 145, 56, 0.4);
+}
+
+.badge-danger {
+  background: var(--sdv-red) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(197, 73, 73, 0.4);
+}
+
+.badge-info {
+  background: var(--sdv-blue-medium) !important;
+  color: white !important;
+  box-shadow: 0 2px 4px rgba(91, 140, 196, 0.4);
+}
+
+/* ========================================
+   TOOLTIPS - Enhanced Readability
+   ======================================== */
+
+.mantine-Tooltip-tooltip {
+  border: 2px solid var(--sdv-brown-dark) !important;
+  border-radius: 0 !important;
+  background: var(--sdv-cream) !important;
+  color: var(--sdv-brown-dark) !important;
+  font-family: var(--fd-font-family) !important;
+  font-size: 10px !important;
+  padding: 12px !important;
+  box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.3) !important;
+  max-width: 350px !important;
+  line-height: 1.6 !important;
+}
+
+/* ========================================
+   HEADER - Enhanced Visual Impact
+   ======================================== */
+
+.game-header {
+  background: linear-gradient(135deg, var(--sdv-brown-medium) 0%, var(--sdv-brown-dark) 100%);
+  border-bottom: 4px solid var(--sdv-brown-dark);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  position: relative;
+}
+
+.game-header::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--sdv-gold), transparent);
+  animation: headerShine 3s infinite;
+}
+
+@keyframes headerShine {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+/* ========================================
+   SIDEBAR - Polished Design
+   ======================================== */
+
+.metrics-sidebar {
+  background: linear-gradient(180deg, var(--sdv-cream) 0%, #f0e6d3 100%);
+  border-left: 4px solid var(--sdv-brown-dark);
+  box-shadow: -4px 0 8px rgba(0, 0, 0, 0.1);
+}
+
+/* ========================================
+   BACKGROUND PATTERNS
+   ======================================== */
+
+/* Subtle pattern overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.03) 2px, rgba(0, 0, 0, 0.03) 4px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.mantine-Container-root {
+  position: relative;
+  z-index: 1;
+}
+
+/* ========================================
+   ALERT ENHANCEMENTS
+   ======================================== */
+
+.mantine-Alert-root {
+  position: relative;
+  overflow: hidden;
+}
+
+.mantine-Alert-root::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: currentColor;
+}
+
+.mantine-Alert-root[data-color="red"]::before {
+  background: var(--sdv-red);
+}
+
+.mantine-Alert-root[data-color="yellow"]::before {
+  background: var(--sdv-orange);
+}
+
+.mantine-Alert-root[data-color="green"]::before {
+  background: var(--sdv-green-medium);
+}
+
+/* ========================================
+   RESPONSIVE POLISH
+   ======================================== */
+
+@media (max-width: 768px) {
+  .mantine-Tabs-tab {
+    font-size: 9px !important;
+    padding: 8px 12px !important;
+  }
+
+  .mantine-Title-root {
+    font-size: 14px !important;
+  }
+
+  .mantine-Text-root[data-size="lg"] {
+    font-size: 14px !important;
+  }
+}
+
+/* ========================================
+   ACCESSIBILITY ENHANCEMENTS
+   ======================================== */
+
+/* Focus states */
+*:focus-visible {
+  outline: 3px solid var(--sdv-gold) !important;
+  outline-offset: 3px;
+  animation: focusPulse 1s infinite;
+}
+
+@keyframes focusPulse {
+  0%, 100% { outline-color: var(--sdv-gold); }
+  50% { outline-color: #ffd700; }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================
+   LOADING STATES
+   ======================================== */
+
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--sdv-brown-light) 25%,
+    var(--sdv-cream) 50%,
+    var(--sdv-brown-light) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmerLoading 1.5s infinite;
+}
+
+@keyframes shimmerLoading {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ========================================
+   MICRO-INTERACTIONS
+   ======================================== */
+
+/* Bounce on important elements */
+.bounce-attention {
+  animation: bounceAttention 2s infinite;
+}
+
+@keyframes bounceAttention {
+  0%, 80%, 100% { transform: translateY(0); }
+  40% { transform: translateY(-8px); }
+  60% { transform: translateY(-4px); }
+}
+
+/* Success feedback */
+.success-flash {
+  animation: successFlash 0.5s ease-out;
+}
+
+@keyframes successFlash {
+  0%, 100% { background-color: transparent; }
+  50% { background-color: rgba(46, 204, 113, 0.3); }
+}
+
+/* Error shake */
+.error-shake {
+  animation: errorShake 0.5s ease-out;
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
