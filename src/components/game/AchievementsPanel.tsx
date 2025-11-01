@@ -1,4 +1,4 @@
-import { Card, Stack, Group, Badge, Text, Progress, Tooltip } from '@mantine/core';
+import { Card, Stack, Group, Badge, Text, Progress, Tooltip, Grid, Box } from '@mantine/core';
 
 interface GameState {
   week: number;
@@ -178,41 +178,69 @@ export default function AchievementsPanel({ gameState }: AchievementsPanelProps)
           animated
         />
 
-        <Stack gap="xs">
+        <Grid gutter="md">
           {ACHIEVEMENTS.map((achievement) => {
             const unlocked = achievement.check(gameState);
             return (
-              <Tooltip
-                key={achievement.id}
-                label={achievement.description}
-                position="top"
-                withArrow
-              >
-                <Card
-                  withBorder
-                  padding="sm"
-                  style={{
-                    opacity: unlocked ? 1 : 0.4,
-                    background: unlocked ? 'var(--fd-positive-surface)' : undefined,
-                  }}
+              <Grid.Col key={achievement.id} span={{ base: 12, xs: 6, sm: 4, md: 3 }}>
+                <Tooltip
+                  label={achievement.description}
+                  position="top"
+                  withArrow
+                  multiline
+                  w={220}
                 >
-                  <Group justify="space-between" align="center">
-                    <Group gap="xs">
-                      <Text size="lg">{achievement.icon}</Text>
-                      <Stack gap={0}>
-                        <Text size="xs" fw={700}>{achievement.name}</Text>
-                        <Badge size="xs" color={getRarityColor(achievement.rarity)}>
+                  <Card
+                    withBorder
+                    padding="lg"
+                    style={{
+                      opacity: unlocked ? 1 : 0.4,
+                      background: unlocked ? 'var(--fd-positive-surface)' : undefined,
+                      cursor: 'pointer',
+                      height: '100%',
+                      transition: 'transform 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (unlocked) e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                  >
+                    <Stack gap="md" align="center">
+                      <Box style={{ position: 'relative' }}>
+                        <Text size="4xl" style={{ fontSize: '3.5rem' }}>
+                          {achievement.icon}
+                        </Text>
+                        {unlocked && (
+                          <Badge
+                            color="green"
+                            size="sm"
+                            style={{
+                              position: 'absolute',
+                              top: -8,
+                              right: -8,
+                            }}
+                          >
+                            ✓
+                          </Badge>
+                        )}
+                      </Box>
+                      <Stack gap={4} align="center">
+                        <Text size="sm" fw={700} ta="center">
+                          {achievement.name}
+                        </Text>
+                        <Badge size="sm" color={getRarityColor(achievement.rarity)}>
                           {achievement.rarity}
                         </Badge>
                       </Stack>
-                    </Group>
-                    {unlocked && <Badge color="green" size="sm">✓</Badge>}
-                  </Group>
-                </Card>
-              </Tooltip>
+                    </Stack>
+                  </Card>
+                </Tooltip>
+              </Grid.Col>
             );
           })}
-        </Stack>
+        </Grid>
       </Stack>
     </Card>
   );
