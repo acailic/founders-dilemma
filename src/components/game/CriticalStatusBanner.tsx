@@ -1,36 +1,7 @@
 import { Card, Group, Stack, Text, Badge, ActionIcon, Transition } from '@mantine/core';
 import { useState } from 'react';
 import './CriticalStatusBanner.css';
-
-interface GameState {
-  week: number;
-  bank: number;
-  burn: number;
-  runway_months: number;
-  mrr: number;
-  wau: number;
-  wau_growth_rate: number;
-  churn_rate: number;
-  morale: number;
-  reputation: number;
-  nps: number;
-  tech_debt: number;
-  velocity: number;
-  founder_equity: number;
-  escape_velocity_progress: {
-    revenue_covers_burn: boolean;
-    growth_sustained: boolean;
-    customer_love: boolean;
-    founder_healthy: boolean;
-    streak_weeks: number;
-  };
-  history: Array<{
-    week: number;
-    morale: number;
-    bank: number;
-    wau: number;
-  }>;
-}
+import type { GameState } from '../../types/game-systems';
 
 interface Alert {
   id: string;

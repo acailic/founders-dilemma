@@ -1,19 +1,5 @@
 import { Card, Stack, Group, Badge, Text, Progress, Tooltip, Grid, Box } from '@mantine/core';
-
-interface GameState {
-  week: number;
-  bank: number;
-  mrr: number;
-  wau: number;
-  morale: number;
-  reputation: number;
-  founder_equity: number;
-  tech_debt: number;
-  velocity: number;
-  escape_velocity_progress: {
-    streak_weeks: number;
-  };
-}
+import type { GameState } from '../../types/game-systems';
 
 interface Achievement {
   id: string;

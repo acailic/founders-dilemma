@@ -1,29 +1,5 @@
 import { Card, Stack, Title, Text, Group, Badge, Progress, Divider, ScrollArea } from '@mantine/core';
-
-interface GameState {
-  week: number;
-  bank: number;
-  burn: number;
-  runway_months: number;
-  mrr: number;
-  wau: number;
-  wau_growth_rate: number;
-  churn_rate: number;
-  morale: number;
-  reputation: number;
-  nps: number;
-  tech_debt: number;
-  velocity: number;
-  founder_equity: number;
-  momentum: number;
-  escape_velocity_progress: {
-    revenue_covers_burn: boolean;
-    growth_sustained: boolean;
-    customer_love: boolean;
-    founder_healthy: boolean;
-    streak_weeks: number;
-  };
-}
+import type { GameState } from '../../types/game-systems';
 
 interface MetricsSidebarProps {
   gameState: GameState;

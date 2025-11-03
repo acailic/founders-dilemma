@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Container, Grid, Stack, Title, Button, Text, Alert, Card, Group, Badge, ActionIcon, Tooltip, Tabs } from '@mantine/core';
 import { invoke } from '@tauri-apps/api/core';
 import { useHotkeys } from '@mantine/hooks';
@@ -14,49 +14,17 @@ import WeeklyInsights from './WeeklyInsights';
 import FailureWarnings from './FailureWarnings';
 import CompoundingBonuses from './CompoundingBonuses';
 import EventModal from './EventModal';
+import OfficeCam from './OfficeCam';
+import OfficeCanvas from '../office/OfficeCanvas';
 import { LuRotateCcw } from 'react-icons/lu';
-import type { TurnResult, GameEvent, WeeklyInsight, FailureWarning, CompoundingBonus } from '../../types/game-systems';
-
-interface GameState {
-  game_id: string;
-  week: number;
-  difficulty: string;
-  started_at: number;
-  bank: number;
-  burn: number;
-  runway_months: number;
-  focus_slots: number;
-  mrr: number;
-  wau: number;
-  wau_growth_rate: number;
-  churn_rate: number;
-  morale: number;
-  reputation: number;
-  nps: number;
-  tech_debt: number;
-  compliance_risk: number;
-  velocity: number;
-  founder_equity: number;
-  option_pool: number;
-  momentum: number;
-  escape_velocity_progress: {
-    revenue_covers_burn: boolean;
-    growth_sustained: boolean;
-    customer_love: boolean;
-    founder_healthy: boolean;
-    streak_weeks: number;
-  };
-  history: Array<{
-    week: number;
-    bank: number;
-    mrr: number;
-    burn: number;
-    wau: number;
-    morale: number;
-    reputation: number;
-    momentum: number;
-  }>;
-}
+import type {
+  TurnResult,
+  GameEvent,
+  WeeklyInsight,
+  FailureWarning,
+  CompoundingBonus,
+  GameState,
+} from '../../types/game-systems';
 
 interface Action {
   ShipFeature?: { quality: string };
@@ -70,6 +38,30 @@ interface GameDashboardProps {
   gameState: GameState;
   onStateUpdate: (state: GameState) => void;
   onResetGame?: () => void;
+}
+
+function extractErrorMessage(err: unknown): string {
+  if (typeof err === 'string') {
+    return err;
+  }
+
+  if (err && typeof err === 'object') {
+    const message = 'message' in err && typeof (err as { message: unknown }).message === 'string'
+      ? (err as { message: string }).message
+      : undefined;
+
+    if (message) {
+      return message;
+    }
+
+    try {
+      return JSON.stringify(err);
+    } catch (serializationError) {
+      console.error('Failed to serialize error object', serializationError);
+    }
+  }
+
+  return 'An unexpected error occurred. Please try again.';
 }
 
 function formatCurrency(value: number): string {
@@ -94,6 +86,11 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
   const [compoundingBonuses, setCompoundingBonuses] = useState<CompoundingBonus[]>([]);
   const [currentEvent, setCurrentEvent] = useState<GameEvent | null>(null);
   const [eventModalOpened, setEventModalOpened] = useState(false);
+  const officeContainerRef = useRef<HTMLDivElement | null>(null);
+  const [officeDimensions, setOfficeDimensions] = useState<{ width: number; height: number }>({
+    width: 1000,
+    height: 700
+  });
 
   const handleResetGame = () => {
     setSelectedActions([]);
@@ -138,7 +135,8 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
         setWeekSummaryOpened(true);
       }
     } catch (err) {
-      setError(err as string);
+      console.error('Failed to process turn', err);
+      setError(extractErrorMessage(err));
     } finally {
       setProcessing(false);
     }
@@ -162,7 +160,8 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
       // After handling event, show week summary
       setWeekSummaryOpened(true);
     } catch (err) {
-      setError(err as string);
+      console.error('Failed to apply event choice', err);
+      setError(extractErrorMessage(err));
     }
   };
 
@@ -185,6 +184,38 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
 
   const focusRemaining = gameState.focus_slots - focusUsed;
 
+  useEffect(() => {
+    const container = officeContainerRef.current;
+    if (!container || typeof ResizeObserver === 'undefined') {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const containerWidth = entry.contentRect.width;
+        if (!containerWidth || Number.isNaN(containerWidth)) {
+          continue;
+        }
+
+        const targetWidth = Math.max(100, Math.floor(containerWidth));
+        const targetHeight = Math.round(targetWidth * 0.7);
+
+        setOfficeDimensions((current) => {
+          if (current.width === targetWidth && current.height === targetHeight) {
+            return current;
+          }
+          return { width: targetWidth, height: targetHeight };
+        });
+      }
+    });
+
+    observer.observe(container);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
+
   // Keyboard shortcuts
   useHotkeys([
     ['Enter', () => {
@@ -196,9 +227,10 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
     ['h', () => setHelpOpened(true)],
     ['?', () => setHelpOpened(true)],
     ['1', () => setActiveTab('dashboard')],
-    ['2', () => setActiveTab('plan')],
-    ['3', () => setActiveTab('history')],
-    ['4', () => setActiveTab('achievements')],
+    ['2', () => setActiveTab('office')],
+    ['3', () => setActiveTab('plan')],
+    ['4', () => setActiveTab('history')],
+    ['5', () => setActiveTab('achievements')],
   ]);
 
   return (
@@ -257,19 +289,34 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
               Dashboard
               <Badge size="xs" ml="xs" variant="light">1</Badge>
             </Tabs.Tab>
+            <Tabs.Tab value="office" leftSection="🏢">
+              Office
+              <Badge size="xs" ml="xs" variant="light">2</Badge>
+            </Tabs.Tab>
             <Tabs.Tab value="plan" leftSection="🎯">
               Plan Week
-              <Badge size="xs" ml="xs" variant="light">2</Badge>
+              <Badge size="xs" ml="xs" variant="light">3</Badge>
             </Tabs.Tab>
             <Tabs.Tab value="history" leftSection="📈">
               History
-              <Badge size="xs" ml="xs" variant="light">3</Badge>
+              <Badge size="xs" ml="xs" variant="light">4</Badge>
             </Tabs.Tab>
             <Tabs.Tab value="achievements" leftSection="🏆">
               Achievements
-              <Badge size="xs" ml="xs" variant="light">4</Badge>
+              <Badge size="xs" ml="xs" variant="light">5</Badge>
             </Tabs.Tab>
           </Tabs.List>
+
+          {/* Office Tab - Full Visualization */}
+          <Tabs.Panel value="office" pt="md">
+            <div ref={officeContainerRef} style={{ width: '100%' }}>
+              <OfficeCanvas
+                gameState={gameState}
+                width={officeDimensions.width}
+                height={officeDimensions.height}
+              />
+            </div>
+          </Tabs.Panel>
 
           {/* Dashboard Tab - Stats Only */}
           <Tabs.Panel value="dashboard" pt="md">
@@ -278,6 +325,9 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
                 <Stack gap="lg">
                   {/* Critical Status Banner */}
                   <CriticalStatusBanner gameState={gameState} />
+
+                  {/* Office Cam Widget */}
+                  <OfficeCam gameState={gameState} />
 
                   {/* Compounding Bonuses - Show when active */}
                   {compoundingBonuses.length > 0 && (

@@ -116,3 +116,5 @@ bundle-report.html
 *.msi
 *.deb
 *.AppImage
+
+target/

@@ -224,7 +224,7 @@ export default function HelpModal({ opened, onClose }: HelpModalProps) {
                 </Group>
                 <Group justify="space-between">
                   <Text size="sm">Quick Actions</Text>
-                  <Badge variant="light">1-9</Badge>
+                  <Badge variant="light">1-5</Badge>
                 </Group>
               </Stack>
             </Card>

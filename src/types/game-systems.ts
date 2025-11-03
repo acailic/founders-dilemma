@@ -20,6 +20,51 @@ export interface WeeklyInsight {
   severity: InsightSeverity;
 }
 
+export interface EscapeVelocityProgress {
+  revenue_covers_burn: boolean;
+  growth_sustained: boolean;
+  customer_love: boolean;
+  founder_healthy: boolean;
+  streak_weeks: number;
+}
+
+export interface GameStateHistoryEntry {
+  week: number;
+  bank: number;
+  mrr: number;
+  burn: number;
+  wau: number;
+  morale: number;
+  reputation: number;
+  momentum: number;
+}
+
+export interface GameState {
+  game_id: string;
+  week: number;
+  difficulty: string;
+  started_at: number;
+  bank: number;
+  burn: number;
+  runway_months: number;
+  focus_slots: number;
+  mrr: number;
+  wau: number;
+  wau_growth_rate: number;
+  churn_rate: number;
+  morale: number;
+  reputation: number;
+  nps: number;
+  tech_debt: number;
+  compliance_risk: number;
+  velocity: number;
+  founder_equity: number;
+  option_pool: number;
+  momentum: number;
+  escape_velocity_progress: EscapeVelocityProgress;
+  history: GameStateHistoryEntry[];
+}
+
 export type WarningSeverity = 'Watch' | 'Caution' | 'Danger' | 'Critical';
 
 export interface WarningSign {
@@ -79,7 +124,7 @@ export interface GameEvent {
 }
 
 export interface TurnResult {
-  state: any; // GameState from existing types
+  state: GameState;
   insights: WeeklyInsight[];
   warnings: FailureWarning[];
   compounding_bonuses: CompoundingBonus[];

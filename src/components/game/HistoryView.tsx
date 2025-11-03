@@ -1,39 +1,7 @@
 import { Stack, Card, Text, Group, Badge, Grid, ScrollArea, Timeline, RingProgress } from '@mantine/core';
 import { useState } from 'react';
 import MiniChart from './MiniChart';
-
-interface GameState {
-  week: number;
-  bank: number;
-  burn: number;
-  runway_months: number;
-  mrr: number;
-  wau: number;
-  wau_growth_rate: number;
-  morale: number;
-  reputation: number;
-  nps: number;
-  tech_debt: number;
-  velocity: number;
-  founder_equity: number;
-  escape_velocity_progress: {
-    revenue_covers_burn: boolean;
-    growth_sustained: boolean;
-    customer_love: boolean;
-    founder_healthy: boolean;
-    streak_weeks: number;
-  };
-  history: Array<{
-    week: number;
-    bank: number;
-    mrr: number;
-    burn: number;
-    wau: number;
-    morale: number;
-    reputation: number;
-    momentum: number;
-  }>;
-}
+import type { GameState } from '../../types/game-systems';
 
 interface HistoryViewProps {
   gameState: GameState;

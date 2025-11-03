@@ -468,3 +468,27 @@ button, .mantine-Card-root, .mantine-Badge-root, .mantine-Button-root {
 .mantine-Container-root {
   animation: slideIn 0.6s ease-out;
 }
+
+/* ========================================
+   OFFICE CAM WIDGET
+   ======================================== */
+
+.fd-game-dashboard__office-cam-widget:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 36px rgba(15, 23, 42, 0.16) !important;
+  border-color: var(--fd-info-border) !important;
+}
+
+.fd-game-dashboard__office-cam-widget:active {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 28px rgba(15, 23, 42, 0.14) !important;
+}
+
+.fd-game-dashboard__office-cam-mini {
+  background: linear-gradient(135deg, var(--fd-surface-1) 0%, var(--fd-surface-2) 100%);
+  transition: all 0.3s ease;
+}
+
+.fd-game-dashboard__office-cam-widget:hover .fd-game-dashboard__office-cam-mini {
+  background: linear-gradient(135deg, var(--fd-surface-0) 0%, var(--fd-surface-1) 100%);
+}

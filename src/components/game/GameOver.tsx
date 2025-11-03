@@ -1,18 +1,5 @@
 import { Modal, Stack, Title, Text, Button, Card, Group, Badge, Divider } from '@mantine/core';
-
-interface GameState {
-  week: number;
-  bank: number;
-  mrr: number;
-  wau: number;
-  morale: number;
-  reputation: number;
-  founder_equity: number;
-  momentum: number;
-  escape_velocity_progress: {
-    streak_weeks: number;
-  };
-}
+import type { GameState } from '../../types/game-systems';
 
 interface GameOverProps {
   status: string;
