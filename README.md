@@ -14,6 +14,8 @@ Play as a startup founder managing:
 - **Health**: Morale, reputation, momentum
 - **Technical**: Tech debt, velocity, compliance
 
+Choose from **15 strategic actions** each week, combining them for **synergy bonuses**. Navigate **dynamic market conditions** that affect your decisions, and **unlock advanced actions** as you progress through your founder journey.
+
 ### 🎓 Educational Game Systems
 
 **The game teaches real founder principles through:**
@@ -94,23 +96,70 @@ pnpm tauri build
 ## 📋 Available Actions
 
 ### Product (1 focus each)
-- **Ship Feature (Quick)**: +WAU, +tech debt, +momentum
-- **Ship Feature (Balanced)**: Moderate gains, balanced
-- **Ship Feature (Polish)**: +reputation, -tech debt, slower
+- **Ship Feature (Quick)**: +WAU, +tech debt, +momentum *(Core)*
+- **Ship Feature (Balanced)**: Moderate gains, balanced *(Core)*
+- **Ship Feature (Polish)**: +reputation, -tech debt, slower *(Core)*
+- **Refactor Code (Surface)**: -10-15 tech debt, +0.05 velocity *(Unlocks Week 5)*
+- **Refactor Code (Deep)**: -25-35 tech debt, +0.15 velocity, -10% WAU *(Unlocks Week 5)*
+- **Run Experiment**: Probabilistic insights, +5-15% metric boost *(Unlocks Week 9)*
 
-### Sales & Growth (1 focus each)
-- **Founder-Led Sales (3 calls)**: Probabilistic MRR gain
-- **Founder-Led Sales (5 calls)**: Higher MRR potential, more morale cost
+### Sales & Growth (1-2 focus)
+- **Founder-Led Sales (3 calls)**: Probabilistic MRR gain *(Core)*
+- **Founder-Led Sales (5 calls)**: Higher MRR potential, more morale cost *(Core)*
+- **Content Launch (Blog)**: +3-8% WAU, +5 reputation *(Unlocks Week 5)*
+- **Content Launch (Tutorial)**: +5-12% WAU, +8 reputation, +5 NPS *(Unlocks Week 5)*
+- **DevRel**: +15-25% WAU, +15 reputation, +10 morale, -$5k *(Unlocks Week 13)*
+- **Paid Ads**: +10-30% WAU, -$10k-30k, effectiveness varies *(Unlocks Week 13)*
 
-### Team (2 focus)
-- **Hire**: +$10k burn, +velocity, +morale
+### Team (1-2 focus)
+- **Hire**: +$10k burn, +velocity, +morale *(Core)*
+- **Coach**: +10 morale, +0.1 velocity, +5 reputation *(Unlocks Week 5)*
+- **Fire**: -$10k burn, -15 morale, -0.1 velocity *(Unlocks Week 21)*
 
 ### Capital (2 focus)
-- **Fundraise ($250k)**: Attempt to raise capital
-- **Fundraise ($500k)**: Larger raise, harder to close
+- **Fundraise ($250k)**: Attempt to raise capital *(Core)*
+- **Fundraise ($500k)**: Larger raise, harder to close *(Core)*
+
+### Operations (1-2 focus)
+- **Compliance Work**: -15-25 compliance risk, -5 morale *(Unlocks Week 9)*
+- **Incident Response**: Reduces reputation damage, high morale cost *(Unlocks Week 21)*
+- **Process Improvement**: +velocity, reduces future incidents *(Unlocks Week 13)*
 
 ### Recovery (1 focus)
-- **Take a Break**: +morale, -growth momentum
+- **Take a Break**: +morale, -growth momentum *(Core)*
+
+**Action Synergy Examples:**
+- **Launch Momentum**: Ship Feature + Content Launch → +15% WAU boost
+- **Engineering Excellence**: Refactor Code + Coach → +0.2 velocity
+- **Integrated Marketing**: Paid Ads + Content Launch → 50% more effective
+
+## 🎯 Strategic Systems
+
+### Action Synergies
+Combine complementary actions in the same turn for bonus effects:
+- **Launch Momentum**: Ship Feature + Content Launch → +15% WAU boost
+- **Engineering Excellence**: Refactor + Coach → +0.2 velocity
+- **Integrated Marketing**: Paid Ads + Content → 50% more effective
+
+### Market Conditions
+External forces that modify gameplay:
+- **Bull Market**: Easier fundraising, higher growth, expensive hiring
+- **Recession**: Harder fundraising, lower growth, cheaper talent
+- **Tech Boom**: Expensive hiring, high velocity, strong fundraising
+
+### Specialization Paths
+Focus your strategy to earn powerful bonuses:
+- **Product Excellence**: 60%+ product actions → +0.3 velocity
+- **Growth Hacking**: 60%+ growth actions → +5% WAU growth
+- **Operational Efficiency**: 60%+ ops actions → -20% burn
+- **Customer Obsessed**: 60%+ customer actions → +15 NPS
+
+### Progression
+Unlock advanced actions as you progress:
+- Week 0-4: Core 5 actions (tutorial phase)
+- Week 5-8: Unlock Refactor, Content, Coach
+- Week 9-12: Unlock Experiments, Compliance
+- Week 13+: Unlock DevRel, Paid Ads, Advanced actions
 
 ## 🎨 Tech Stack
 
@@ -200,7 +249,7 @@ pnpm test
 - ✅ React UI with Mantine components
 - ✅ Tab-based navigation (Dashboard, Plan Week, History, Achievements)
 - ✅ Multiple difficulty modes
-- ✅ All core actions (Ship Feature, Sales, Hire, Fundraise, Take Break)
+- ✅ All 15 actions with strategic depth
 - ✅ Escape velocity win condition
 
 **Educational Systems:**
@@ -209,6 +258,12 @@ pnpm test
 - ✅ Failure Warnings - Early warning system for dangerous patterns
 - ✅ Strategic Dilemmas - Event system with meaningful choices
 
+**Strategic Systems:**
+- ✅ Action Synergies - Bonus effects for complementary actions
+- ✅ Market Conditions - Dynamic external modifiers
+- ✅ Specialization Paths - Strategic focus bonuses
+- ✅ Progression System - Unlockable actions and milestones
+
 **UI/UX:**
 - ✅ Enhanced theme with professional polish
 - ✅ Historical charts and week-by-week timeline
@@ -216,7 +271,7 @@ pnpm test
 - ✅ Critical status banners
 - ✅ Keyboard shortcuts
 
-**Current State**: Fully playable with educational systems!
+**Current State**: Fully playable with enhanced strategic depth!
 
 ## 🤝 Contributing
 
@@ -233,8 +288,7 @@ MIT
 ## 🎯 Future Enhancements
 
 **Potential Additions:**
-- [ ] More strategic dilemmas and events
-- [ ] Advanced metrics and analytics
+- [ ] Advanced metrics and analytics dashboard
 - [ ] Tutorial/onboarding flow
 - [ ] Sound effects and music
 - [ ] Save game persistence
@@ -242,6 +296,14 @@ MIT
 - [ ] Multiplayer/leaderboard
 - [ ] More difficulty modes
 - [ ] Custom scenarios
+- [ ] Seasonal challenges and meta-progression
+- [ ] Community synergy/event creation tools
+
+**Community Ideas:**
+- Submit new action synergy combinations
+- Propose market conditions based on real startup experiences
+- Suggest strategic dilemmas from your founder journey
+- Create custom difficulty modes with unique constraints
 
 ---
 

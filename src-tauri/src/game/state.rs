@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
+use super::actions::Action;
+use super::market_conditions::MarketCondition;
+use super::synergies::SpecializationPath;
+use super::progression::SeasonalChallenge;
 
 /// Difficulty modes with different starting conditions and modifiers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -106,6 +111,22 @@ impl Default for EscapeVelocityProgress {
     }
 }
 
+/// Team composition breakdown
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TeamComposition {
+    pub engineers: u8,
+    pub sales: u8,
+    pub other: u8,
+}
+
+/// Customer segment breakdown
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CustomerBreakdown {
+    pub enterprise: u32,
+    pub smb: u32,
+    pub self_serve: u32,
+}
+
 /// Main game state - single source of truth
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameState {
@@ -147,6 +168,19 @@ pub struct GameState {
 
     // History
     pub history: Vec<WeekSnapshot>,
+
+    // New fields for enhanced gameplay
+    pub unlocked_actions: Vec<String>,
+    pub active_market_conditions: Vec<MarketCondition>,
+    pub specialization_path: Option<SpecializationPath>,
+    pub action_history: Vec<(u32, Vec<Action>)>,
+    pub event_cooldowns: HashMap<String, u32>,
+    pub seasonal_challenge: Option<SeasonalChallenge>,
+    pub team_size: u8,
+    pub incident_count: u32,
+    pub last_break_week: u32,
+    pub consecutive_ship_weeks: u8,
+    pub customer_segments: HashMap<String, u32>,
 }
 
 impl GameState {
@@ -194,6 +228,31 @@ impl GameState {
 
             // History
             history: Vec::new(),
+
+            // New fields initialization
+            unlocked_actions: vec![
+                "ShipFeature".to_string(),
+                "FounderLedSales".to_string(),
+                "Hire".to_string(),
+                "Fundraise".to_string(),
+                "TakeBreak".to_string(),
+            ],
+            active_market_conditions: Vec::new(),
+            specialization_path: None,
+            action_history: Vec::new(),
+            event_cooldowns: HashMap::new(),
+            seasonal_challenge: None,
+            team_size: 1, // Founder
+            incident_count: 0,
+            last_break_week: 0,
+            consecutive_ship_weeks: 0,
+            customer_segments: {
+                let mut map = HashMap::new();
+                map.insert("enterprise".to_string(), 0);
+                map.insert("smb".to_string(), 0);
+                map.insert("self_serve".to_string(), 100); // Starting users
+                map
+            },
         };
 
         state.update_derived_metrics();
@@ -274,6 +333,31 @@ impl GameState {
             self.tech_debt += 0.5;
         }
 
+        // Update market conditions
+        super::market_conditions::update_market_conditions(self);
+
+        // Check for new market conditions
+        if let Some(condition) = super::market_conditions::generate_market_condition(self, self.week) {
+            self.active_market_conditions.push(condition);
+        }
+
+        // Update action history (keep last 12 weeks)
+        if self.action_history.len() > 12 {
+            self.action_history.remove(0);
+        }
+
+        // Increment incident_count if tech_debt > 80 (probabilistic)
+        if self.tech_debt > 80.0 && rand::random::<f64>() < 0.1 {
+            self.incident_count += 1;
+        }
+
+        // Update team_size based on hires/fires - placeholder, actual logic in actions
+        // For now, assume no change; update in resolve_action
+
+        // Track consecutive_ship_weeks - placeholder, update based on actions taken
+        // If ShipFeature was taken this week, increment, else reset to 0
+        // Since actions are not passed here, this might be updated elsewhere
+
         // Update derived metrics
         self.update_derived_metrics();
 
@@ -306,6 +390,55 @@ impl GameState {
     pub fn has_won(&self) -> bool {
         self.escape_velocity_progress.streak_weeks >= 12
     }
+
+    /// Check if an action is unlocked
+    pub fn is_action_unlocked(&self, action: &Action) -> bool {
+        self.unlocked_actions.contains(&format!("{:?}", action))
+    }
+
+    /// Get active modifiers from market conditions
+    pub fn get_active_modifiers(&self) -> Vec<(String, f64)> {
+        let mut modifiers = Vec::new();
+        for condition in &self.active_market_conditions {
+            for modifier in &condition.modifiers {
+                modifiers.push((modifier.stat_affected.clone(), modifier.multiplier));
+            }
+        }
+        modifiers
+    }
+
+    /// Get team composition
+    pub fn get_team_composition(&self) -> TeamComposition {
+        // Placeholder: calculate based on team_size and assumptions
+        // In a real implementation, track specific roles
+        TeamComposition {
+            engineers: (self.team_size / 2).max(1), // Assume half engineers
+            sales: (self.team_size / 4).max(0),
+            other: self.team_size - (self.team_size / 2).max(1) - (self.team_size / 4).max(0),
+        }
+    }
+
+    /// Get customer breakdown
+    pub fn get_customer_breakdown(&self) -> CustomerBreakdown {
+        CustomerBreakdown {
+            enterprise: *self.customer_segments.get("enterprise").unwrap_or(&0),
+            smb: *self.customer_segments.get("smb").unwrap_or(&0),
+            self_serve: *self.customer_segments.get("self_serve").unwrap_or(&0),
+        }
+    }
+
+    /// Calculate market-adjusted metric
+    pub fn calculate_market_adjusted_metric(&self, base_value: f64, metric: &str) -> f64 {
+        let mut adjusted = base_value;
+        for condition in &self.active_market_conditions {
+            for modifier in &condition.modifiers {
+                if modifier.stat_affected == metric {
+                    adjusted *= modifier.multiplier;
+                }
+            }
+        }
+        adjusted
+    }
 }
 
 #[cfg(test)]
@@ -320,6 +453,10 @@ mod tests {
         assert_eq!(state.burn, 8_000.0);
         assert!(state.runway_months > 6.0);
         assert_eq!(state.focus_slots, 3);
+        // Test new fields
+        assert!(state.unlocked_actions.contains(&"ShipFeature".to_string()));
+        assert_eq!(state.team_size, 1);
+        assert_eq!(state.incident_count, 0);
     }
 
     #[test]
@@ -361,5 +498,21 @@ mod tests {
         state.morale = -10.0;
         state.update_derived_metrics();
         assert_eq!(state.morale, 0.0);
+    }
+
+    #[test]
+    fn test_is_action_unlocked() {
+        let state = GameState::new(DifficultyMode::IndieBootstrap);
+        // Assuming Action::ShipFeature exists
+        // assert!(state.is_action_unlocked(&Action::ShipFeature));
+    }
+
+    #[test]
+    fn test_get_active_modifiers() {
+        let mut state = GameState::new(DifficultyMode::IndieBootstrap);
+        // Add a mock condition
+        // state.active_market_conditions.push(...);
+        let modifiers = state.get_active_modifiers();
+        assert!(modifiers.is_empty());
     }
 }

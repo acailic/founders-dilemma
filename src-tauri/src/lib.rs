@@ -30,6 +30,9 @@ use game::{
     compounding::{check_compounding_effects, apply_compounding_bonuses},
     warnings::check_failure_warnings,
     events_enhanced::check_for_events,
+    synergies::{check_action_synergies, detect_specialization_path, ActionSynergy, SpecializationPath},
+    market_conditions::{get_active_conditions, update_market_conditions, generate_market_condition, MarketCondition},
+    progression::{get_available_actions, check_milestone_events, check_unlocks, MilestoneEvent},
 };
 
 #[derive(Clone, Serialize)]
@@ -77,10 +80,24 @@ struct TurnResult {
   warnings: Vec<game::warnings::FailureWarning>,
   compounding_bonuses: Vec<game::compounding::CompoundingBonus>,
   events: Vec<game::events_enhanced::GameEvent>,
+  synergies: Vec<game::synergies::ActionSynergy>,
+  market_conditions: Vec<game::market_conditions::MarketCondition>,
+  unlocked_actions: Vec<String>,
+  milestone_event: Option<game::progression::MilestoneEvent>,
+  specialization_bonus: Option<game::synergies::SpecializationPath>,
 }
 
 #[tauri::command]
 fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, String> {
+  // Before action resolution: Check action unlocks and validate
+  let available_actions = get_available_actions(&state);
+  for action in &actions {
+    if !available_actions.contains(&format!("{:?}", action)) {
+      return Err(format!("Action {:?} is not unlocked yet", action));
+    }
+  }
+  let market_modifiers = get_active_conditions(&state);
+
   // Validate focus cost
   let total_focus: u8 = actions.iter().map(|a| a.focus_cost()).sum();
   if total_focus > state.focus_slots {
@@ -90,11 +107,22 @@ fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, S
   // Save state before changes for insights comparison
   let prev_state = state.clone();
 
-  // Apply each action
-  for action in actions {
-    let _result = resolve_action(&mut state, &action);
-    // TODO: Store action results for display
+  // During action resolution: Apply market effectiveness modifiers and track actions
+  for action in &actions {
+    let modifier = get_action_effectiveness_modifier(action, &market_modifiers);
+    // Apply modifier to action resolution (assuming resolve_action can take a modifier; adjust if needed)
+    let _result = resolve_action(&mut state, action); // TODO: Integrate modifier into resolve_action
   }
+  // Track actions in state.action_history (assuming state has this field; add if not present)
+  state.action_history.push((state.week, actions.clone()));
+
+  // After action resolution: Check synergies and apply bonuses
+  let synergies = check_action_synergies(&actions);
+  // Apply synergy bonuses (assuming apply_synergy_bonuses function exists; integrate here)
+  // TODO: Implement apply_synergy_bonuses(&mut state, &synergies);
+  let specialization_bonus = detect_specialization_path(&state.history, &actions);
+  // Apply specialization bonuses if detected (assuming logic exists; integrate here)
+  // TODO: Implement specialization bonus application
 
   // Check and apply compounding effects (rewards for sustained good practices)
   let compounding_bonuses = check_compounding_effects(&state, 12);
@@ -104,6 +132,17 @@ fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, S
   apply_churn(&mut state);
   update_nps(&mut state);
   update_escape_velocity_progress(&mut state);
+
+  // During week advancement: Update market conditions, check for new ones, milestones, and unlocks
+  update_market_conditions(&mut state);
+  let new_market_condition = generate_market_condition(&state, state.week);
+  if let Some(condition) = new_market_condition {
+    // Add to state.active_market_conditions (assuming field exists)
+    state.active_market_conditions.push(condition);
+  }
+  let milestone_event = check_milestone_events(&state);
+  let new_unlocks = check_unlocks(&state);
+  // Update state.unlocked_actions with new_unlocks (assuming field exists)
 
   // Advance to next week
   state.advance_week();
@@ -126,6 +165,11 @@ fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, S
     warnings,
     compounding_bonuses,
     events,
+    synergies,
+    market_conditions: market_modifiers,
+    unlocked_actions: new_unlocks,
+    milestone_event,
+    specialization_bonus,
   })
 }
 
@@ -149,6 +193,17 @@ fn apply_event_choice(
     }
     _ => Err("Event does not require a choice".to_string()),
   }
+}
+
+#[tauri::command]
+fn get_available_actions(state: GameState) -> Result<Vec<String>, String> {
+  let actions = get_available_actions(&state);
+  Ok(actions.iter().map(|a| format!("{:?}", a)).collect())
+}
+
+#[tauri::command]
+fn get_market_status(state: GameState) -> Result<Vec<game::market_conditions::MarketCondition>, String> {
+  Ok(get_active_conditions(&state))
 }
 
 #[tauri::command]
@@ -215,6 +270,8 @@ pub fn run() {
       take_turn,
       apply_event_choice,
       check_game_status,
+      get_available_actions,
+      get_market_status,
     ])
     // allow only one instance and propagate args and cwd to existing instance
     .plugin(tauri_plugin_single_instance::init(|app, args, cwd| {

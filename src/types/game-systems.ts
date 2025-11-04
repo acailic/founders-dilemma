@@ -63,6 +63,12 @@ export interface GameState {
   momentum: number;
   escape_velocity_progress: EscapeVelocityProgress;
   history: GameStateHistoryEntry[];
+  unlocked_actions: string[];  // NEW
+  active_market_conditions: MarketCondition[];  // NEW
+  specialization_path: SpecializationPath | null;  // NEW
+  team_size: number;  // NEW
+  incident_count: number;  // NEW
+  last_break_week: number;  // NEW
 }
 
 export type WarningSeverity = 'Watch' | 'Caution' | 'Danger' | 'Critical';
@@ -123,12 +129,64 @@ export interface GameEvent {
   };
 }
 
+export interface ActionSynergy {
+  id: string;
+  name: string;
+  description: string;
+  bonus_effects: SynergyEffect[];
+}
+
+export interface SynergyEffect {
+  stat_name: string;
+  bonus_amount: number;
+  description: string;
+}
+
+export interface MarketCondition {
+  id: string;
+  name: string;
+  description: string;
+  duration_weeks: number;
+  modifiers: MarketModifier[];
+  icon: string;
+}
+
+export interface MarketModifier {
+  stat_affected: string;
+  multiplier: number;
+  description: string;
+}
+
+export type SpecializationPath = 
+  | 'ProductExcellence' 
+  | 'GrowthHacking' 
+  | 'OperationalEfficiency' 
+  | 'CustomerObsessed';
+
+export interface MilestoneEvent {
+  week: number;
+  title: string;
+  description: string;
+  rewards: string[];
+}
+
+export interface UnlockedAction {
+  action_name: string;
+  unlocked_at_week: number;
+  unlock_reason: string;
+}
+
 export interface TurnResult {
   state: GameState;
   insights: WeeklyInsight[];
   warnings: FailureWarning[];
   compounding_bonuses: CompoundingBonus[];
   events: GameEvent[];
+  synergies: ActionSynergy[];  // NEW
+  market_conditions: MarketCondition[];  // NEW
+  unlocked_actions: string[];  // NEW
+  milestone_event: MilestoneEvent | null;  // NEW
+  specialization_bonus: SpecializationPath | null;  // NEW
 }
 
 // Helper functions for UI
@@ -184,4 +242,46 @@ export function getCategoryIcon(category: InsightCategory): string {
     default:
       return '📊';
   }
+}
+
+export function getSpecializationIcon(path: SpecializationPath): string {
+  switch (path) {
+    case 'ProductExcellence':
+      return '🎨';
+    case 'GrowthHacking':
+      return '📈';
+    case 'OperationalEfficiency':
+      return '⚙️';
+    case 'CustomerObsessed':
+      return '❤️';
+    default:
+      return '🎯';
+  }
+}
+
+export function getSpecializationDescription(path: SpecializationPath): string {
+  switch (path) {
+    case 'ProductExcellence':
+      return 'Focus on building exceptional products with high velocity and low tech debt.';
+    case 'GrowthHacking':
+      return 'Prioritize user acquisition and retention through marketing and sales efforts.';
+    case 'OperationalEfficiency':
+      return 'Optimize processes and reduce costs to maximize runway and sustainability.';
+    case 'CustomerObsessed':
+      return 'Build deep customer relationships and high satisfaction for long-term loyalty.';
+    default:
+      return 'A balanced approach to startup growth and management.';
+  }
+}
+
+export function getMarketConditionColor(condition: MarketCondition): string {
+  const totalMultiplier = condition.modifiers.reduce((sum, mod) => sum + mod.multiplier, 0);
+  if (totalMultiplier > 1.1) return 'green';
+  if (totalMultiplier < 0.9) return 'red';
+  return 'yellow';
+}
+
+export function formatSynergyBonus(synergy: ActionSynergy): string {
+  const bonuses = synergy.bonus_effects.map(effect => `${effect.description} (+${effect.bonus_amount})`).join(', ');
+  return `${synergy.name}: ${bonuses}`;
 }
