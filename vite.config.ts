@@ -30,7 +30,7 @@ export default defineConfig({
   envPrefix: ['VITE_', 'TAURI_ENV_'],
 
   // GitHub Pages base path - set to repository name for deployment
-  base: process.env.NODE_ENV === 'production' ? '/founders-dilemma/' : '/',
+  base: process.env.VITE_BASE_PATH || '/',
 
   build: {
     // Tauri supports es2021

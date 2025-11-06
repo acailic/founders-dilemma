@@ -72,19 +72,28 @@ pnpm tauri build
 The game can also be deployed as a web application using GitHub Pages:
 
 ```bash
-# Build for web deployment
+# Build for web deployment (writes to ./build for both Tauri + web)
 pnpm run build:web
 
-# Preview locally
-pnpm run serve
+# Preview the exact GitHub Pages bundle
+pnpm run serve -- --host 127.0.0.1 --port 4173
 ```
 
-The web version automatically detects when running in a browser and uses the TypeScript game engine instead of Tauri. All features are available in both desktop and web versions.
+The web version automatically detects when it is running in a browser and uses the TypeScript engine instead of Tauri. All features are available in both desktop and web versions.
 
-**GitHub Pages Deployment:**
-- Automatic deployment via GitHub Actions on pushes to `main`
-- Available at: `https://[username].github.io/founders-dilemma/`
-- No server required - runs entirely in the browser
+**GitHub Pages Deployment Pipeline**
+
+The `.github/workflows/deploy.yml` workflow now handles publishing:
+1. Every push to `main` (or a manual workflow dispatch) installs dependencies with pnpm, runs `pnpm run build:web`, and adds a SPA-friendly `404.html`.
+2. The workflow enforces the `gh-pages` branch as the Pages source via the GitHub REST API.
+3. Built assets are force-pushed to `gh-pages` with `peaceiris/actions-gh-pages`, and are immediately served at `https://[username].github.io/founders-dilemma/`.
+
+**How to verify a deployment**
+- Push to `main` and wait for the **Deploy to GitHub Pages** workflow to finish.
+- Confirm the workflow log shows “Deploy to gh-pages” succeeded and that the `gh-pages` branch was updated.
+- Visit `https://[username].github.io/founders-dilemma/` (or `curl -I` the URL) to ensure the HTML references `/founders-dilemma/assets/...`.
+
+Because the workflow configures the Pages source automatically, no manual uploads are required.
 
 ## 🎯 Difficulty Modes
 

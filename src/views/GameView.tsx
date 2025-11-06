@@ -7,13 +7,34 @@ import StartupAnimation from '../components/game/StartupAnimation';
 import { useGameConfig } from '../common/GameConfigContext';
 import { THEME_PRESETS } from '../common/themePresets';
 import { useLocalForage } from '../common/utils';
-import type { GameState } from '../types/game-systems';
+import type { GameState, DifficultyMode } from '../types/game-systems';
+import type { GameStatus } from '../lib/game-engine/victory';
+
+function mapUIToEngineDifficulty(uiDifficulty: string): DifficultyMode {
+  switch (uiDifficulty) {
+    case 'indie': return 'IndieBootstrap';
+    case 'vc': return 'VCTrack';
+    case 'regulated': return 'RegulatedFintech';
+    case 'infra': return 'InfraDevTool';
+    default: return 'IndieBootstrap';
+  }
+}
+
+function mapEngineToUIDifficulty(engineDifficulty: DifficultyMode): string {
+  switch (engineDifficulty) {
+    case 'IndieBootstrap': return 'Indie Bootstrap';
+    case 'VCTrack': return 'VC Track';
+    case 'RegulatedFintech': return 'Regulated Fintech';
+    case 'InfraDevTool': return 'Infrastructure/DevTool';
+    default: return 'Indie Bootstrap';
+  }
+}
 
 export default function GameView() {
   const { config } = useGameConfig();
   const accentColor = THEME_PRESETS[config.themeAccent]?.primaryColor ?? 'teal';
   const [gameState, setGameState] = useState<GameState | null>(null);
-  const [gameStatus, setGameStatus] = useState<string>('not_started');
+  const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>(config.defaultDifficulty);
   const [loading, setLoading] = useState(false);
   const [showStartupAnimation, setShowStartupAnimation] = useState(true);
@@ -22,9 +43,10 @@ export default function GameView() {
   const startNewGame = async (difficulty: string) => {
     setLoading(true);
     try {
-      const state = await gameInvoke('new_game', { difficulty });
+      const engineDifficulty = mapUIToEngineDifficulty(difficulty);
+      const state = await gameInvoke('new_game', { difficulty: engineDifficulty });
       setGameState(state);
-      setGameStatus('playing');
+      setGameStatus(null); // Will be checked in useEffect
       setSavedGame(state);
     } catch (error) {
       console.error('Failed to start game:', error);
@@ -51,7 +73,7 @@ export default function GameView() {
   }, [gameState?.week]);
 
   useEffect(() => {
-    if (gameStatus === 'not_started') {
+    if (gameStatus === null) {
       setSelectedDifficulty(config.defaultDifficulty);
     }
   }, [config.defaultDifficulty, gameStatus]);
@@ -59,13 +81,13 @@ export default function GameView() {
   const resumeSavedGame = () => {
     if (!savedGame) return;
     setGameState(savedGame);
-    setGameStatus('playing');
+    setGameStatus(null); // Will be checked in useEffect
   };
 
   const resetProgress = () => {
     setSavedGame(null);
     setGameState(null);
-    setGameStatus('not_started');
+    setGameStatus(null);
     setSelectedDifficulty(config.defaultDifficulty);
   };
 
@@ -79,7 +101,7 @@ export default function GameView() {
     return <StartupAnimation onComplete={() => setShowStartupAnimation(false)} />;
   }
 
-  if (gameStatus === 'not_started') {
+  if (gameStatus === null) {
     return (
       <Container size="lg" py="xl">
         <Stack gap="xl" align="center">
@@ -98,7 +120,7 @@ export default function GameView() {
                     <Group gap="sm">
                       <Title order={3} size="h4">Resume Campaign</Title>
                       <Badge color={accentColor as any}>
-                        {savedGame.difficulty.toUpperCase()}
+                        {mapEngineToUIDifficulty(savedGame.difficulty)}
                       </Badge>
                     </Group>
                     <Button variant="light" color="red" size="xs" onClick={resetProgress}>
@@ -226,10 +248,10 @@ export default function GameView() {
     );
   }
 
-  if (gameStatus.startsWith('defeat:') || gameStatus === 'victory') {
+  if (gameStatus?.game_over) {
     return (
       <GameOver
-        status={gameStatus}
+        status={gameStatus.victory ? 'victory' : `defeat:${gameStatus.message}`}
         gameState={gameState!}
         onRestart={() => {
           resetProgress();

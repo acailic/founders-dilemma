@@ -118,7 +118,7 @@ export default function EventModal({ opened, event, onClose, onChoiceSelected }:
                   {/* Choice Label */}
                   <Group justify="space-between">
                     <Text size="lg" fw={700}>
-                      {choice.label}
+                      {choice.text}
                     </Text>
                     {selectedChoice === index && (
                       <Badge size="lg" color="yellow">
@@ -171,11 +171,11 @@ export default function EventModal({ opened, event, onClose, onChoiceSelected }:
                           </Badge>
                           <Text
                             size="xs"
-                            c={effect.change > 0 ? 'green' : 'red'}
+                            c={effect.delta > 0 ? 'green' : 'red'}
                             fw={600}
                           >
-                            {effect.change > 0 ? '+' : ''}
-                            {effect.change}
+                            {effect.delta > 0 ? '+' : ''}
+                            {effect.delta}
                           </Text>
                           <Text size="xs" c="dimmed">
                             {effect.description}

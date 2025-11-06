@@ -1,4 +1,4 @@
-import { GameState } from '../../types/game-systems';
+import { GameState, GameEvent as UIGameEvent, EventChoice as UIEventChoice, EventEffect } from '../../types/game-systems';
 
 // Port of Rust events system from src-tauri/src/game/events.rs
 
@@ -34,7 +34,7 @@ export interface EventResult {
   effects_applied: EventEffect[];
 }
 
-export function checkForEvents(state: GameState, activeEvents: GameEvent[]): GameEvent | null {
+export function checkForEvents(state: GameState, activeEvents: GameEvent[]): UIGameEvent | null {
   // Don't trigger new events if there are already active events
   if (activeEvents.length > 0) {
     return null;
@@ -46,15 +46,39 @@ export function checkForEvents(state: GameState, activeEvents: GameEvent[]): Gam
     if (event.condition(state) && Math.random() * 100 < event.probability) {
       event.active = true;
       event.week_started = state.week;
-      return event;
+      
+      // Convert to UI format
+      return {
+        id: event.id,
+        week: state.week,
+        title: event.title,
+        description: event.description,
+        event_type: {
+          Dilemma: {
+            choices: event.choices.map(choice => ({
+              id: choice.id,
+              text: choice.text,
+              description: choice.description,
+              short_term: 'Short term effect',
+              long_term: 'Long term effect', 
+              wisdom: 'Choose wisely',
+              effects: choice.effects
+            }))
+          }
+        }
+      };
     }
   }
 
   return null;
 }
 
-export function applyEventChoice(state: GameState, event: GameEvent, choiceId: string): EventResult {
-  const choice = event.choices.find(c => c.id === choiceId);
+export function applyEventChoice(state: GameState, event: UIGameEvent, choiceId: string): GameState {
+  if (!('Dilemma' in event.event_type)) {
+    throw new Error('Event is not a dilemma');
+  }
+  
+  const choice = event.event_type.Dilemma.choices.find(c => c.id === choiceId);
   if (!choice) {
     throw new Error(`Invalid choice ID: ${choiceId}`);
   }
@@ -64,14 +88,7 @@ export function applyEventChoice(state: GameState, event: GameEvent, choiceId: s
     applyEventEffect(state, effect);
   }
 
-  // Mark event as inactive
-  event.active = false;
-
-  return {
-    event,
-    choice_made: choiceId,
-    effects_applied: choice.effects,
-  };
+  return state;
 }
 
 function applyEventEffect(state: GameState, effect: EventEffect): void {

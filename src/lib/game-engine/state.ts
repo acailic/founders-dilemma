@@ -1,4 +1,6 @@
 import { GameState, DifficultyMode, EscapeVelocityProgress, GameStateHistoryEntry, MarketCondition, SpecializationPath, Competitor } from '../../types/game-systems';
+import { calculateWeeklyRevenue, calculateWeeklyBurn } from './economy';
+import { updateMarketConditions as updateMarketConditionsExternal } from './market-conditions';
 
 // Port of Rust GameState structure and logic from src-tauri/src/game/state.rs
 
@@ -101,13 +103,12 @@ export function saveSnapshot(state: GameState): void {
 export function advanceWeek(state: GameState): void {
   state.week += 1;
 
-  // Apply weekly costs
-  const weekly_burn = state.burn / 4.0;
+  // Apply weekly costs and revenue using economy functions
+  const weekly_burn = calculateWeeklyBurn(state);
   state.bank -= weekly_burn;
 
-  // Apply weekly revenue
-  const weekly_mrr = state.mrr / 4.0;
-  state.bank += weekly_mrr;
+  const weekly_revenue = calculateWeeklyRevenue(state);
+  state.bank += weekly_revenue;
 
   // Apply growth
   const prev_wau = state.wau;
@@ -127,7 +128,7 @@ export function advanceWeek(state: GameState): void {
   }
 
   // Update market conditions
-  updateMarketConditions(state);
+  tickMarketConditions(state);
 
   // Update derived metrics
   updateDerivedMetrics(state);
@@ -251,7 +252,7 @@ function generateCompetitors(difficulty: DifficultyMode, week: number): Competit
   ];
 }
 
-function updateMarketConditions(state: GameState): void {
+function tickMarketConditions(state: GameState): void {
   // Decrement duration for all active conditions
   for (const condition of state.active_market_conditions) {
     if (condition.duration_weeks > 0) {

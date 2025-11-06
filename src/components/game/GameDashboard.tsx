@@ -32,24 +32,18 @@ import type {
   MarketCondition,
   MilestoneEvent,
   SpecializationPath,
+  DifficultyMode,
+  Action,
 } from '../../types/game-systems';
 
-interface Action {
-  ShipFeature?: { quality: string };
-  FounderLedSales?: { call_count: number };
-  Hire?: null;
-  Fundraise?: { target: number };
-  TakeBreak?: null;
-  RefactorCode?: { depth: string };
-  RunExperiment?: { category: string };
-  ContentLaunch?: { content_type: string };
-  DevRel?: { event_type: string };
-  PaidAds?: { budget: number; channel: string };
-  Coach?: { focus: string };
-  Fire?: { reason: string };
-  ComplianceWork?: { hours: number };
-  IncidentResponse?: null;
-  ProcessImprovement?: null;
+function mapEngineToUIDifficulty(engineDifficulty: DifficultyMode): string {
+  switch (engineDifficulty) {
+    case 'IndieBootstrap': return 'Indie Bootstrap';
+    case 'VCTrack': return 'VC Track';
+    case 'RegulatedFintech': return 'Regulated Fintech';
+    case 'InfraDevTool': return 'Infrastructure/DevTool';
+    default: return 'Indie Bootstrap';
+  }
 }
 
 interface GameDashboardProps {
@@ -199,14 +193,14 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
   };
 
   const handleEventChoice = async (choiceIndex: number) => {
-    if (!currentEvent) return;
+    if (!currentEvent || !('Dilemma' in currentEvent.event_type)) return;
 
     try {
+      const choiceId = currentEvent.event_type.Dilemma.choices[choiceIndex].id;
       const newState = await gameInvoke('apply_event_choice', {
         state: gameState,
-        eventId: currentEvent.id,
-        choiceIndex,
         event: currentEvent,
+        choiceId,
       });
 
       onStateUpdate(newState);
@@ -312,7 +306,7 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
               <Title order={1} size="h2">Founder's Dilemma</Title>
               <Group gap="md">
                 <Badge size="lg" variant="filled">Week {gameState.week}</Badge>
-                <Badge size="lg" variant="light">{gameState.difficulty.toUpperCase()}</Badge>
+                <Badge size="lg" variant="light">{mapEngineToUIDifficulty(gameState.difficulty)}</Badge>
               </Group>
             </Stack>
             <Group gap="lg">

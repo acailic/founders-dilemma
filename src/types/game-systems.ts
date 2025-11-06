@@ -143,12 +143,13 @@ export interface CompoundingBonus {
 
 export interface EventEffect {
   stat_name: string;
-  change: number;
+  delta: number;
   description: string;
 }
 
 export interface EventChoice {
-  label: string;
+  id: string;
+  text: string;
   description: string;
   short_term: string;
   long_term: string;

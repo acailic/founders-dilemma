@@ -1,4 +1,4 @@
-import { GameState, DifficultyMode, Action } from '../types/game-systems';
+import { GameState, DifficultyMode, Action, GameEvent } from '../types/game-systems';
 import * as gameEngine from './game-engine';
 
 // Type definitions for Tauri invoke
@@ -17,7 +17,8 @@ async function invoke<T = any>(options: InvokeOptions): Promise<T> {
   if (isTauri()) {
     // Use Tauri invoke
     const { invoke: tauriInvoke } = await import('@tauri-apps/api/core');
-    return tauriInvoke<T>(options.cmd, options);
+    const { cmd, ...args } = options;
+    return tauriInvoke<T>(cmd, args);
   } else {
     // Use TypeScript implementation
     return invokeTypeScript<T>(options);
@@ -57,7 +58,7 @@ async function invokeTypeScript<T>(options: InvokeOptions): Promise<T> {
       return gameEngine.checkForEvents(args.state as GameState, args.activeEvents) as T;
 
     case 'apply_event_choice':
-      return gameEngine.applyEventChoice(args.state as GameState, args.event, args.choiceId) as T;
+      return gameEngine.applyEventChoice(args.state as GameState, args.event as GameEvent, args.choiceId) as T;
 
     case 'check_action_synergies':
       return gameEngine.checkActionSynergies(args.state as GameState, args.actions, args.recentActions, args.synergies) as T;

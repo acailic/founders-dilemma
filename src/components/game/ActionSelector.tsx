@@ -1,23 +1,18 @@
 import { Grid, Stack, Button, Text, Card, Group, Badge, Divider, Modal, TextInput, Select, Tooltip, ActionIcon } from '@mantine/core';
 import { useState } from 'react';
-
-interface Action {
-  ShipFeature?: { quality: string };
-  FounderLedSales?: { call_count: number };
-  Hire?: null;
-  Fundraise?: { target: number };
-  TakeBreak?: null;
-  RefactorCode?: { depth: string };
-  RunExperiment?: { category: string };
-  ContentLaunch?: { content_type: string };
-  DevRel?: { event_type: string };
-  PaidAds?: { budget: number; channel: string };
-  Coach?: { focus: string };
-  Fire?: { reason: string };
-  ComplianceWork?: { hours: number };
-  IncidentResponse?: null;
-  ProcessImprovement?: null;
-}
+import type {
+  Action,
+  Quality,
+  RefactorDepth,
+  ExperimentType,
+  ContentType,
+  DevRelEvent,
+  AdChannel,
+  CoachingFocus,
+  FiringReason,
+  MarketCondition,
+  ActionSynergy,
+} from '../../types/game-systems';
 
 interface ActionSelectorProps {
   selectedActions: Action[];
@@ -40,34 +35,6 @@ interface ActionCardData {
   risk: 'low' | 'medium' | 'high';
   action: Action;
   unlockCondition?: string;
-}
-
-interface MarketCondition {
-  id: string;
-  name: string;
-  description: string;
-  duration_weeks: number;
-  modifiers: MarketModifier[];
-  icon: string;
-}
-
-interface MarketModifier {
-  stat_affected: string;
-  multiplier: number;
-  description: string;
-}
-
-interface ActionSynergy {
-  id: string;
-  name: string;
-  description: string;
-  bonus_effects: SynergyEffect[];
-}
-
-interface SynergyEffect {
-  stat_name: string;
-  bonus_amount: number;
-  description: string;
 }
 
 export default function ActionSelector({
@@ -114,7 +81,7 @@ export default function ActionSelector({
       effects: ['+3-5% WAU', '+6-8 tech debt', '-1-2 morale'],
       category: 'product',
       risk: 'medium',
-      action: { ShipFeature: { quality: 'Quick' } },
+      action: { ShipFeature: { quality: 'Quick' as Quality } },
     },
     {
       name: 'Ship Balanced',
@@ -124,7 +91,7 @@ export default function ActionSelector({
       effects: ['+4-6% WAU', '+2-3 tech debt', '+1 morale'],
       category: 'product',
       risk: 'low',
-      action: { ShipFeature: { quality: 'Balanced' } },
+      action: { ShipFeature: { quality: 'Balanced' as Quality } },
     },
     {
       name: 'Ship Polish',
@@ -134,7 +101,7 @@ export default function ActionSelector({
       effects: ['+2-3% WAU', '-3-4 tech debt', '+3-4 morale', '+rep'],
       category: 'product',
       risk: 'low',
-      action: { ShipFeature: { quality: 'Polish' } },
+      action: { ShipFeature: { quality: 'Polish' as Quality } },
     },
     {
       name: 'RefactorCode (Surface)',
@@ -144,7 +111,7 @@ export default function ActionSelector({
       effects: ['-10-15 tech debt', '+0.05 velocity', '-5 morale'],
       category: 'product',
       risk: 'low',
-      action: { RefactorCode: { depth: 'Surface' } },
+      action: { RefactorCode: { depth: 'Surface' as RefactorDepth } },
       unlockCondition: 'Week 5+',
     },
     {
@@ -155,7 +122,7 @@ export default function ActionSelector({
       effects: ['-25-35 tech debt', '+0.15 velocity', '-10 morale', '-10% WAU growth'],
       category: 'product',
       risk: 'medium',
-      action: { RefactorCode: { depth: 'Deep' } },
+      action: { RefactorCode: { depth: 'Deep' as RefactorDepth } },
       unlockCondition: 'Week 8+',
     },
     {
@@ -166,7 +133,7 @@ export default function ActionSelector({
       effects: ['Probabilistic insight', '+5-15% metric boost', 'Learn something new'],
       category: 'product',
       risk: 'medium',
-      action: { RunExperiment: { category: 'Pricing' } },
+      action: { RunExperiment: { category: 'Pricing' as ExperimentType } },
       unlockCondition: 'Week 9+',
     },
     {
@@ -197,7 +164,7 @@ export default function ActionSelector({
       effects: ['+3-8% WAU', '+5 reputation', '+2 NPS'],
       category: 'sales',
       risk: 'low',
-      action: { ContentLaunch: { content_type: 'BlogPost' } },
+      action: { ContentLaunch: { content_type: 'BlogPost' as ContentType } },
       unlockCondition: 'Week 5+',
     },
     {
@@ -208,7 +175,7 @@ export default function ActionSelector({
       effects: ['+5-12% WAU', '+8 reputation', '+5 NPS', 'Higher conversion'],
       category: 'sales',
       risk: 'low',
-      action: { ContentLaunch: { content_type: 'Tutorial' } },
+      action: { ContentLaunch: { content_type: 'Tutorial' as ContentType } },
       unlockCondition: 'Week 5+',
     },
     {
@@ -219,7 +186,7 @@ export default function ActionSelector({
       effects: ['+15-25% WAU', '+15 reputation', '+10 morale', '-$5k'],
       category: 'sales',
       risk: 'medium',
-      action: { DevRel: { event_type: 'Conference' } },
+      action: { DevRel: { event_type: 'Conference' as DevRelEvent } },
       unlockCondition: 'Week 13+',
     },
     {
@@ -230,7 +197,7 @@ export default function ActionSelector({
       effects: ['+10-30% WAU', '-$10k-30k', 'Effectiveness varies'],
       category: 'sales',
       risk: 'high',
-      action: { PaidAds: { budget: 20000, channel: 'Google' } },
+      action: { PaidAds: { budget: 20000, channel: 'Google' as AdChannel } },
       unlockCondition: 'Week 13+',
     },
     {
@@ -251,7 +218,7 @@ export default function ActionSelector({
       effects: ['+10 morale', '+0.1 velocity', '+5 reputation'],
       category: 'team',
       risk: 'low',
-      action: { Coach: { focus: 'Skills' } },
+      action: { Coach: { focus: 'Skills' as CoachingFocus } },
       unlockCondition: 'Week 5+',
     },
     {
@@ -262,7 +229,7 @@ export default function ActionSelector({
       effects: ['-$10k burn', '-15 morale', '-0.1 velocity', 'Depends on reason'],
       category: 'team',
       risk: 'high',
-      action: { Fire: { reason: 'Performance' } },
+      action: { Fire: { reason: 'Performance' as FiringReason } },
       unlockCondition: 'Week 21+',
     },
     {

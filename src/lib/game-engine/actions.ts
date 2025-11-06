@@ -1,4 +1,12 @@
-import { GameState, Action, Quality, RefactorDepth, ExperimentType, ContentType, DevRelEvent, AdChannel, CoachingFocus, FiringReason } from '../../types/game-systems';
+import { GameState, Action, Quality, RefactorDepth, ExperimentType, ContentType, DevRelEvent, AdChannel, CoachingFocus, FiringReason, SpecializationPath } from '../../types/game-systems';
+import { checkActionSynergies, applySynergyEffects } from './synergies';
+import { processCompoundingEffects } from './compounding';
+import { updateMarketConditions, applyMarketEffects } from './market-conditions';
+import { checkForEvents } from './events';
+import { checkProgressionMilestones, getAllProgressionMilestones, getProgressionStatus, applyProgressionRewards } from './progression';
+import { generateWarnings } from './warnings';
+import { applyChurn, updateNps } from './economy';
+import { advanceWeek } from './state';
 
 // Port of Rust action resolution logic from src-tauri/src/game/actions.rs
 
@@ -32,38 +40,111 @@ export function takeTurn(state: GameState, actions: Action[]): any {
 
   // Apply weekly mechanics
   applyChurn(state);
-  updateNPS(state);
+  updateNps(state);
+
+  // Check for action synergies
+  const recentActions: Action[] = []; // TODO: maintain recent actions history
+  const synergies: any[] = []; // TODO: load synergies from somewhere
+  const synergiesResult = checkActionSynergies(state, actions, recentActions, synergies);
+  applySynergyEffects(state, synergiesResult);
+
+  // Process compounding effects
+  const compoundingEffects: any[] = []; // TODO: load compounding effects from somewhere
+  const compoundingResult = processCompoundingEffects(state, compoundingEffects);
+
+  // Update market conditions
+  const marketConditions: any[] = []; // TODO: load market conditions from somewhere
+  const marketResult = updateMarketConditions(state, marketConditions);
+  applyMarketEffects(state, marketResult);
+
+  // Check for events
+  const activeEvents: any[] = []; // TODO: maintain active events
+  const newEvent = checkForEvents(state, activeEvents);
+
+  // Check progression milestones
+  const milestones = getAllProgressionMilestones(state.difficulty);
+  const updatedMilestones = checkProgressionMilestones(state, milestones);
+  const progressionStatus = getProgressionStatus(state, updatedMilestones);
+  applyProgressionRewards(state, progressionStatus.available_rewards);
 
   // Advance to next week
   advanceWeek(state);
 
   // Generate insights and other results
-  // This is a simplified version - full implementation would include all the complex logic
   const insights = generateInsights(prevState, state);
-  const warnings: any[] = [];
-  const compoundingBonuses: any[] = [];
-  const events: any[] = [];
-  const synergies: any[] = [];
-  const marketConditions: any[] = [];
-  const unlockedActions: string[] = [];
-  const milestoneEvent = null;
-  const specializationBonus = null;
+  const wr = generateWarnings(state);
+  const warnings = wr.warnings;
+
+  // Compute specialization bonus
+  const specializationBonus = computeSpecializationBonus(actions);
+
+  // Determine milestone event
+  const milestoneEvent = updatedMilestones.find(m => m.unlocked && m.achieved_week === state.week) || null;
 
   return {
     state,
     insights,
     warnings,
-    compounding_bonuses: compoundingBonuses,
-    events,
-    synergies,
-    market_conditions: marketConditions,
-    unlocked_actions: unlockedActions,
+    compounding_bonuses: compoundingResult.effects,
+    events: newEvent ? [newEvent] : [],
+    synergies: synergiesResult.synergies_triggered,
+    market_conditions: marketResult,
+    unlocked_actions: progressionStatus.available_rewards.filter(r => r.type === 'Action').map(r => r.value),
     milestone_event: milestoneEvent,
     specialization_bonus: specializationBonus,
   };
 }
 
-export function resolveAction(state: GameState, action: Action): ActionResult {
+function computeSpecializationBonus(actions: Action[]): SpecializationPath | null {
+  if (actions.length === 0) return null;
+
+  // Count action types
+  const actionCounts: Record<string, number> = {};
+  for (const action of actions) {
+    const actionType = Object.keys(action)[0];
+    actionCounts[actionType] = (actionCounts[actionType] ?? 0) + 1;
+  }
+
+  const totalActions = actions.length;
+  const concentrations = Object.entries(actionCounts).map(([type, count]) => ({
+    type,
+    percentage: (count / totalActions) * 100
+  }));
+
+  // Find the highest concentration
+  const maxConcentration = concentrations.reduce((max, curr) => 
+    curr.percentage > max.percentage ? curr : max
+  );
+
+  // Map to specialization if >60% concentration
+  if (maxConcentration.percentage > 60) {
+    switch (maxConcentration.type) {
+      case 'ShipFeature':
+      case 'RefactorCode':
+      case 'RunExperiment':
+        return 'ProductExcellence';
+      case 'FounderLedSales':
+      case 'PaidAds':
+      case 'ContentLaunch':
+      case 'DevRel':
+        return 'GrowthHacking';
+      case 'Hire':
+      case 'Fire':
+      case 'Coach':
+      case 'ProcessImprovement':
+        return 'OperationalEfficiency';
+      case 'ComplianceWork':
+      case 'IncidentResponse':
+        return 'CustomerObsessed';
+      default:
+        return null;
+    }
+  }
+
+  return null;
+}
+
+function resolveAction(state: GameState, action: Action): ActionResult {
   const effects: StatEffect[] = [];
 
   if ('ShipFeature' in action) {
@@ -805,52 +886,6 @@ function getFiringEffects(reason: FiringReason): { burn_reduction: number; moral
   const burn_reduction = 8000.0 * (0.8 + Math.random() * 0.4);
   const [morale_hit, velocity_hit] = reason === 'Performance' ? [-8.0, -0.05] : reason === 'Culture' ? [-12.0, -0.08] : [-5.0, -0.02];
   return { burn_reduction, morale_hit, velocity_hit };
-}
-
-function applyChurn(state: GameState): void {
-  // Simplified churn application
-  const churn_amount = state.mrr * (state.churn_rate / 100.0) / 12.0; // Monthly churn
-  state.mrr -= churn_amount;
-}
-
-function updateNPS(state: GameState): void {
-  // Simplified NPS update based on product quality and customer satisfaction
-  const quality_factor = (100.0 - state.tech_debt) / 100.0;
-  const satisfaction_factor = state.morale / 100.0;
-  const target_nps = (quality_factor * satisfaction_factor * 60.0) - 20.0; // Range: -20 to 40
-
-  // Gradual movement toward target
-  const delta = (target_nps - state.nps) * 0.1;
-  state.nps += delta;
-}
-
-function advanceWeek(state: GameState): void {
-  state.week += 1;
-
-  // Apply weekly costs
-  const weekly_burn = state.burn / 4.0;
-  state.bank -= weekly_burn;
-
-  // Apply weekly revenue
-  const weekly_mrr = state.mrr / 4.0;
-  state.bank += weekly_mrr;
-
-  // Apply growth
-  const prev_wau = state.wau;
-  state.wau = Math.floor(state.wau * (1.0 + state.wau_growth_rate / 100.0));
-
-  // Calculate actual growth rate
-  if (prev_wau > 0) {
-    state.wau_growth_rate = ((state.wau - prev_wau) / prev_wau) * 100.0;
-  }
-
-  // Natural morale decay
-  state.morale -= 0.5;
-
-  // Tech debt slightly increases if velocity is high
-  if (state.velocity > 1.2) {
-    state.tech_debt += 0.5;
-  }
 }
 
 function generateInsights(prevState: GameState, currentState: GameState): any[] {
