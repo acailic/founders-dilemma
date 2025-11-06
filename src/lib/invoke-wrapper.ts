@@ -42,7 +42,7 @@ async function invokeTypeScript<T>(options: InvokeOptions): Promise<T> {
       return gameEngine.getAvailableActions(args.state as GameState) as T;
 
     case 'get_market_status':
-      return gameEngine.getMarketStatus(args.state as GameState) as T;
+      return gameEngine.getMarketStatus(args.state as GameState, []) as T;
 
     case 'generate_insights':
       return gameEngine.generateInsights(args.prevState as GameState, args.currentState as GameState) as T;
