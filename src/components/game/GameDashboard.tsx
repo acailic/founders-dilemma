@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Container, Grid, Stack, Title, Button, Text, Alert, Card, Group, Badge, ActionIcon, Tooltip, Tabs, Progress, Modal, Toast } from '@mantine/core';
-import { invoke } from '@tauri-apps/api/core';
+import { gameInvoke } from '../../lib/invoke-wrapper';
 import { useHotkeys } from '@mantine/hooks';
 import StatsPanel from './StatsPanel';
 import ActionSelector from './ActionSelector';
@@ -16,8 +16,8 @@ import CompoundingBonuses from './CompoundingBonuses';
 import EventModal from './EventModal';
 import OfficeCam from './OfficeCam';
 import OfficeCanvas from '../office/OfficeCanvas';
-import MarketConditionsPanel from './MarketConditionsPanel';
-import SynergyNotification from './SynergyNotification';
+import { MarketConditionsPanel } from './MarketConditionsPanel';
+import { SynergyNotification } from './SynergyNotification';
 import UnlockNotification from './UnlockNotification';
 import SpecializationPanel from './SpecializationPanel';
 import { LuRotateCcw } from 'react-icons/lu';
@@ -146,7 +146,7 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
       setPreviousState(gameState);
 
       // Call enhanced take_turn that returns TurnResult
-      const result = await invoke<TurnResult>('take_turn', {
+      const result = await gameInvoke('take_turn', {
         state: gameState,
         actions: selectedActions,
       });
@@ -202,7 +202,7 @@ export default function GameDashboard({ gameState, onStateUpdate, onResetGame }:
     if (!currentEvent) return;
 
     try {
-      const newState = await invoke<GameState>('apply_event_choice', {
+      const newState = await gameInvoke('apply_event_choice', {
         state: gameState,
         eventId: currentEvent.id,
         choiceIndex,

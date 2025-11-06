@@ -4,7 +4,7 @@ use crate::game::actions::Action;
 use crate::game::state::{GameState, WeekSnapshot};
 
 /// Represents the type of action for synergy detection (ignoring parameters)
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum ActionType {
     ShipFeature,
     FounderLedSales,
@@ -417,26 +417,53 @@ pub fn detect_specialization_path(action_history: &[(u32, Vec<Action>)], recent_
 pub fn apply_synergy_bonuses(state: &mut GameState, synergies: &[ActionSynergy]) {
     for synergy in synergies {
         for bonus in &synergy.bonus_effects {
-            let stat_value = match bonus.stat_name.as_str() {
-                "WAU" => &mut state.wau,
-                "MRR" => &mut state.mrr,
-                "Burn" => &mut state.burn,
-                "Velocity" => &mut state.velocity,
-                "Morale" => &mut state.morale,
-                "Reputation" => &mut state.reputation,
-                "TechDebt" => &mut state.tech_debt,
-                "ComplianceRisk" => &mut state.compliance_risk,
+            match bonus.stat_name.as_str() {
+                "WAU" => {
+                    let mut wau = state.wau as f64;
+                    apply_bonus(&mut wau, bonus);
+                    state.wau = wau.max(0.0).round() as u32;
+                }
+                "MRR" => {
+                    apply_bonus(&mut state.mrr, bonus);
+                    state.mrr = state.mrr.max(0.0);
+                }
+                "Burn" => {
+                    apply_bonus(&mut state.burn, bonus);
+                    state.burn = state.burn.max(0.0);
+                }
+                "Velocity" => {
+                    apply_bonus(&mut state.velocity, bonus);
+                    state.velocity = state.velocity.clamp(0.0, 5.0);
+                }
+                "Morale" => {
+                    apply_bonus(&mut state.morale, bonus);
+                    state.morale = state.morale.clamp(0.0, 100.0);
+                }
+                "Reputation" => {
+                    apply_bonus(&mut state.reputation, bonus);
+                    state.reputation = state.reputation.clamp(0.0, 100.0);
+                }
+                "TechDebt" => {
+                    apply_bonus(&mut state.tech_debt, bonus);
+                    state.tech_debt = state.tech_debt.clamp(0.0, 100.0);
+                }
+                "ComplianceRisk" => {
+                    apply_bonus(&mut state.compliance_risk, bonus);
+                    state.compliance_risk = state.compliance_risk.clamp(0.0, 100.0);
+                }
                 _ => continue,
-            };
-            
-            if bonus.is_multiplier {
-                *stat_value *= 1.0 + bonus.bonus_amount;
-            } else {
-                *stat_value += bonus.bonus_amount;
             }
         }
     }
     state.update_derived_metrics();
+}
+
+fn apply_bonus(value: &mut f64, bonus: &SynergyBonus) {
+    if bonus.is_multiplier {
+        *value *= 1.0 + bonus.bonus_amount;
+    } else {
+        *value += bonus.bonus_amount;
+    }
 }
 
 /// Calculate a score for how well actions work together

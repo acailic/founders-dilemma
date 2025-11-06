@@ -1,16 +1,21 @@
+import { useMemo } from 'react';
 import { Modal, Stack, Text, Button, Group, Card, Badge, Divider } from '@mantine/core';
 
 interface UnlockNotificationProps {
+  opened: boolean;
   actionName: string;
   unlockReason: string;
   description: string;
+  onTryAction?: () => void;
   onClose: () => void;
 }
 
 export default function UnlockNotification({
+  opened,
   actionName,
   unlockReason,
   description,
+  onTryAction,
   onClose,
 }: UnlockNotificationProps) {
   // Get action icon based on name (simplified - could be expanded)
@@ -28,11 +33,15 @@ export default function UnlockNotification({
     return '✨';
   };
 
-  const actionIcon = getActionIcon(actionName);
+  const actionIcon = useMemo(() => getActionIcon(actionName), [actionName]);
+
+  if (!opened) {
+    return null;
+  }
 
   return (
     <Modal
-      opened={true}
+      opened={opened}
       onClose={onClose}
       centered
       size="lg"
@@ -104,7 +113,10 @@ export default function UnlockNotification({
                 💡 Strategic Tip:
               </Text>
               <Text size="sm" ta="center" c="dimmed">
-                This action works great with Ship Feature for launch momentum, or combine with Coach for engineering excellence!
+                Picture your squad gathered around the product wall—pair this move with Ship Feature to spark a launch rush, or invite Coach into the room to polish the craft.
+              </Text>
+              <Text size="sm" ta="center" c="dimmed">
+                Every choice nudges the narrative forward. Where do you take the story next?
               </Text>
             </Stack>
           </Stack>
@@ -117,12 +129,12 @@ export default function UnlockNotification({
             variant="light"
             color="blue"
             onClick={() => {
-              // Navigate to Plan Week tab (this would need to be passed as prop or use context)
+              onTryAction?.();
               onClose();
             }}
             leftSection="🎯"
           >
-            Try It Now
+            Step Into Planning
           </Button>
           <Button
             size="lg"

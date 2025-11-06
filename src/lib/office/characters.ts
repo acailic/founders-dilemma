@@ -202,6 +202,26 @@ export function selectAction(role: Role, week: number): ActionType {
   }
 }
 
+export function actionToAnimationState(action: ActionType): string {
+  switch (action) {
+    case ActionType.Coding:
+    case ActionType.Designing:
+    case ActionType.Writing:
+      return 'action:focus';
+    case ActionType.Calling:
+    case ActionType.Meeting:
+      return 'action:collab';
+    case ActionType.Celebrating:
+      return 'action:celebrate';
+    case ActionType.Walking:
+      return 'action:walk';
+    case ActionType.Break:
+      return 'action:break';
+    default:
+      return 'idle';
+  }
+}
+
 // ============================================================================
 // TEAM GENERATION
 // ============================================================================
@@ -219,6 +239,7 @@ export function generateTeamMember(
   const seniority = determineSeniority(role, teamSize, rng);
   const randomSuffix = Math.floor(rng() * 1e9).toString(36);
   const id = `member-${week}-${role}-${randomSuffix}`;
+  const currentAction = selectAction(role, week);
 
   return {
     id,
@@ -229,13 +250,13 @@ export function generateTeamMember(
 
     // Visual state
     position,
-    currentAction: selectAction(role, week),
+    currentAction,
     mood: Mood.Happy,  // Default, will be updated
     facingDirection: Direction.South,
 
     // Animation
-    animationState: 'idle',
-    animationFrame: 0,
+    animationState: actionToAnimationState(currentAction),
+    animationFrame: Math.floor(rng() * 1000),
 
     // Stats
     productivity: 70 + Math.round(rng() * 20),  // 70-90
@@ -381,6 +402,8 @@ export class TeamManager {
         // Update mood and action
         member.mood = mood;
         member.currentAction = selectAction(member.role, week);
+        member.animationState = actionToAnimationState(member.currentAction);
+        member.animationFrame = ((member.animationFrame ?? 0) + 1) % 1000;
         member.satisfaction = morale;
 
         team.push(member);

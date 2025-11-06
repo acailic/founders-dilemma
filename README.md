@@ -67,6 +67,25 @@ The game will open in a Tauri window. Navigate to "Founder's Dilemma" in the sid
 pnpm tauri build
 ```
 
+### Web Deployment (GitHub Pages)
+
+The game can also be deployed as a web application using GitHub Pages:
+
+```bash
+# Build for web deployment
+pnpm run build:web
+
+# Preview locally
+pnpm run serve
+```
+
+The web version automatically detects when running in a browser and uses the TypeScript game engine instead of Tauri. All features are available in both desktop and web versions.
+
+**GitHub Pages Deployment:**
+- Automatic deployment via GitHub Actions on pushes to `main`
+- Available at: `https://[username].github.io/founders-dilemma/`
+- No server required - runs entirely in the browser
+
 ## 🎯 Difficulty Modes
 
 **Indie Bootstrap**

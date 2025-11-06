@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use super::state::GameState;
+use super::competitors::{get_most_threatening_competitor, get_shipping_velocity_ratio};
 
 /// Educational insight about player's decisions and game state
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +22,7 @@ pub enum InsightCategory {
     CustomerSatisfaction,
     Velocity,
     Burnout,
+    Competition,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -187,6 +189,77 @@ pub fn generate_weekly_insights(prev_state: &GameState, curr_state: &GameState) 
             action_suggestion: "Double down on what's working. Make it even better. Ask your champions what made them champions. Consider a referral program or case studies.".to_string(),
             severity: InsightSeverity::Info,
         });
+    }
+
+    // Competitive Intelligence Insights
+
+    // Competitor Out-Shipping
+    if let Some(competitor) = get_most_threatening_competitor(&curr_state.competitors) {
+        let velocity_ratio = get_shipping_velocity_ratio(competitor, curr_state);
+        if velocity_ratio > 1.5 {
+            insights.push(WeeklyInsight {
+                category: InsightCategory::Competition,
+                title: "Competitor Out-Shipping You".to_string(),
+                observation: format!("{} is shipping features {:.1}x faster than you. Their feature parity is at {:.0}% and growing.", competitor.name, velocity_ratio, competitor.feature_parity),
+                insight: "Shipping velocity is a competitive weapon. Fast-moving competitors can out-innovate you, steal customers, and attract better talent. Speed compounds - they learn faster, iterate faster, and build momentum. This is how underdogs beat incumbents.".to_string(),
+                action_suggestion: format!("Analyze why {} ships faster. Is it team size? Tech debt? Focus? Consider: reduce tech debt, improve velocity, or find a differentiation strategy that doesn't require matching their pace.", competitor.name),
+                severity: InsightSeverity::Warning,
+            });
+        }
+    }
+
+    // Funding Gap
+    let total_competitor_funding = curr_state.get_total_competitor_funding();
+    if total_competitor_funding > curr_state.bank * 5.0 && curr_state.week > 52 {
+        insights.push(WeeklyInsight {
+            category: InsightCategory::Competition,
+            title: "Funding Gap Widening".to_string(),
+            observation: format!("Your competitors have raised ${:.0}M combined while you have ${:.0}k in the bank. They can outspend you on hiring, marketing, and sales.", total_competitor_funding / 1_000_000.0, curr_state.bank / 1000.0),
+            insight: "Capital is a competitive advantage. Well-funded competitors can afford to lose money acquiring customers, hire faster, and wait out market downturns. You need either: (1) raise money to compete, (2) find an unfair advantage that doesn't require capital, or (3) target a different market segment.".to_string(),
+            action_suggestion: "Consider fundraising if you're on the VC track. Or double down on capital efficiency - find channels and strategies that don't require outspending competitors. Bootstrapped companies can win, but not by playing the same game as funded competitors.".to_string(),
+            severity: InsightSeverity::Warning,
+        });
+    }
+
+    // Market Share Declining
+    if curr_state.player_market_share < prev_state.player_market_share - 5.0 {
+        insights.push(WeeklyInsight {
+            category: InsightCategory::Competition,
+            title: "Losing Market Share".to_string(),
+            observation: format!("Your market share dropped from {:.1}% to {:.1}% this week. Competitors are winning customers you should be winning.", prev_state.player_market_share, curr_state.player_market_share),
+            insight: "Market share is a leading indicator. Losing share means: (1) competitors are executing better, (2) your product isn't differentiated enough, or (3) you're being outmarketed. In winner-take-most markets, losing share early can be fatal - network effects and brand recognition compound.".to_string(),
+            action_suggestion: "Diagnose why you're losing share. Talk to customers who chose competitors. What did they offer that you don't? Is it features, pricing, brand, or distribution? Fix the root cause, not the symptoms.".to_string(),
+            severity: InsightSeverity::Critical,
+        });
+    }
+
+    // Competitive Advantage
+    if curr_state.player_market_share > 60.0 {
+        let avg_competitor_parity = curr_state.get_average_competitor_feature_parity();
+        if curr_state.velocity > avg_competitor_parity / 10.0 {
+            insights.push(WeeklyInsight {
+                category: InsightCategory::Competition,
+                title: "Competitive Moat Building".to_string(),
+                observation: format!("You control {:.1}% market share and ship faster than competitors. You're building a defensible position.", curr_state.player_market_share),
+                insight: "Market leadership compounds. High market share → more customers → more feedback → better product → more customers. You're in the virtuous cycle. Now the question is: how do you make this position defensible? Network effects? Switching costs? Brand? Data advantages?".to_string(),
+                action_suggestion: "Don't get complacent. Dominant players get disrupted when they stop innovating. Keep shipping, keep listening to customers, and invest in moats that make it hard for competitors to catch up. Consider: platform effects, integrations, or community.".to_string(),
+                severity: InsightSeverity::Info,
+            });
+        }
+    }
+
+    // Acquisition Opportunity
+    if curr_state.bank > 200_000.0 {
+        if let Some(competitor) = curr_state.competitors.iter().find(|c| !c.is_acquired && c.feature_parity < 30.0 && matches!(c.funding_stage, super::competitors::FundingStage::Bootstrapped)) {
+            insights.push(WeeklyInsight {
+                category: InsightCategory::Competition,
+                title: "Acquisition Opportunity".to_string(),
+                observation: format!("{} is struggling (feature parity: {:.0}%). They might be open to acquisition. You have the capital.", competitor.name, competitor.feature_parity),
+                insight: "Acquiring competitors can be faster than building. You get their customers, team, and technology. But acquisitions are risky - cultural fit matters, integration is hard, and you might overpay. Only acquire if it accelerates your strategy, not just to eliminate competition.".to_string(),
+                action_suggestion: format!("Consider reaching out to {}. But be strategic - what would you gain? Their customers? Technology? Team? Make sure the acquisition makes sense beyond just removing a competitor.", competitor.name),
+                severity: InsightSeverity::Info,
+            });
+        }
     }
 
     // Limit to top 3 most important insights

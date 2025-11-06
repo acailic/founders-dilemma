@@ -86,6 +86,25 @@ export default function ActionSelector({
   const [riskFilter, setRiskFilter] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
+  const getUnlockKeyForCard = (card: ActionCardData): string => {
+    if (card.name.startsWith('Ship')) return 'ShipFeature';
+    if (card.name.startsWith('Sales')) return 'FounderLedSales';
+    if (card.name.startsWith('RefactorCode')) return 'RefactorCode';
+    if (card.name.startsWith('ContentLaunch')) return 'ContentLaunch';
+    if (card.name.startsWith('Raise')) return 'Fundraise';
+    if (card.name === 'RunExperiment') return 'RunExperiment';
+    if (card.name === 'DevRel') return 'DevRel';
+    if (card.name === 'PaidAds') return 'PaidAds';
+    if (card.name === 'Hire') return 'Hire';
+    if (card.name === 'Coach') return 'Coach';
+    if (card.name === 'Fire') return 'Fire';
+    if (card.name === 'Take Break') return 'TakeBreak';
+    if (card.name === 'ComplianceWork') return 'ComplianceWork';
+    if (card.name === 'IncidentResponse') return 'IncidentResponse';
+    if (card.name === 'ProcessImprovement') return 'ProcessImprovement';
+    return card.name.replace(/\s+/g, '');
+  };
+
   const actions: ActionCardData[] = [
     {
       name: 'Ship Quick',
@@ -420,7 +439,8 @@ export default function ActionSelector({
           <Grid>
             {acts.map((actionCard, index) => {
               const affordable = canAfford(actionCard.focusCost);
-              const isLocked = !unlockedActions.includes(actionCard.name);
+              const unlockKey = getUnlockKeyForCard(actionCard);
+              const isLocked = !unlockedActions.includes(unlockKey);
               const synergyHighlight = getSynergyHighlight(actionCard);
               const marketMod = getMarketModifier(actionCard);
               return (

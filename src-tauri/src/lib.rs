@@ -30,9 +30,9 @@ use game::{
     compounding::{check_compounding_effects, apply_compounding_bonuses},
     warnings::check_failure_warnings,
     events_enhanced::check_for_events,
-    synergies::{check_action_synergies, detect_specialization_path, ActionSynergy, SpecializationPath},
-    market_conditions::{get_active_conditions, update_market_conditions, generate_market_condition, MarketCondition},
-    progression::{get_available_actions, check_milestone_events, check_unlocks, MilestoneEvent},
+    synergies::{check_action_synergies, detect_specialization_path, apply_synergy_bonuses, ActionSynergy, SpecializationPath},
+    market_conditions::{get_active_conditions, update_market_conditions, generate_market_condition, MarketCondition, get_action_effectiveness_modifier},
+    progression::{action_unlock_key, get_available_actions as progression_get_available_actions, check_milestone_events, check_unlocks, MilestoneEvent},
 };
 
 #[derive(Clone, Serialize)]
@@ -90,9 +90,9 @@ struct TurnResult {
 #[tauri::command]
 fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, String> {
   // Before action resolution: Check action unlocks and validate
-  let available_actions = get_available_actions(&state);
+  let available_actions = progression_get_available_actions(&state);
   for action in &actions {
-    if !available_actions.contains(&format!("{:?}", action)) {
+    if !available_actions.iter().any(|available| available == action) {
       return Err(format!("Action {:?} is not unlocked yet", action));
     }
   }
@@ -109,7 +109,7 @@ fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, S
 
   // During action resolution: Apply market effectiveness modifiers and track actions
   for action in &actions {
-    let modifier = get_action_effectiveness_modifier(action, &market_modifiers);
+    let _modifier = get_action_effectiveness_modifier(action, &market_modifiers);
     // Apply modifier to action resolution (assuming resolve_action can take a modifier; adjust if needed)
     let _result = resolve_action(&mut state, action); // TODO: Integrate modifier into resolve_action
   }
@@ -118,11 +118,8 @@ fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, S
 
   // After action resolution: Check synergies and apply bonuses
   let synergies = check_action_synergies(&actions);
-  // Apply synergy bonuses (assuming apply_synergy_bonuses function exists; integrate here)
-  // TODO: Implement apply_synergy_bonuses(&mut state, &synergies);
-  let specialization_bonus = detect_specialization_path(&state.history, &actions);
-  // Apply specialization bonuses if detected (assuming logic exists; integrate here)
-  // TODO: Implement specialization bonus application
+  apply_synergy_bonuses(&mut state, &synergies);
+  let specialization_bonus = detect_specialization_path(&state.action_history, &actions);
 
   // Check and apply compounding effects (rewards for sustained good practices)
   let compounding_bonuses = check_compounding_effects(&state, 12);
@@ -141,8 +138,15 @@ fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, S
     state.active_market_conditions.push(condition);
   }
   let milestone_event = check_milestone_events(&state);
-  let new_unlocks = check_unlocks(&state);
-  // Update state.unlocked_actions with new_unlocks (assuming field exists)
+  let new_unlock_actions = check_unlocks(&state);
+  let mut new_unlocks = Vec::new();
+  for action in new_unlock_actions {
+    let key = action_unlock_key(&action);
+    if !state.unlocked_actions.contains(&key) {
+      state.unlocked_actions.push(key.clone());
+      new_unlocks.push(key);
+    }
+  }
 
   // Advance to next week
   state.advance_week();
@@ -157,7 +161,7 @@ fn take_turn(mut state: GameState, actions: Vec<Action>) -> Result<TurnResult, S
   let warnings = check_failure_warnings(&state);
 
   // Check for random events
-  let events = check_for_events(&state);
+  let events = check_for_events(&mut state);
 
   Ok(TurnResult {
     state,
@@ -197,7 +201,7 @@ fn apply_event_choice(
 
 #[tauri::command]
 fn get_available_actions(state: GameState) -> Result<Vec<String>, String> {
-  let actions = get_available_actions(&state);
+  let actions = progression_get_available_actions(&state);
   Ok(actions.iter().map(|a| format!("{:?}", a)).collect())
 }
 

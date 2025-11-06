@@ -29,6 +29,9 @@ export default defineConfig({
   // env variables
   envPrefix: ['VITE_', 'TAURI_ENV_'],
 
+  // GitHub Pages base path - set to repository name for deployment
+  base: process.env.NODE_ENV === 'production' ? '/founders-dilemma/' : '/',
+
   build: {
     // Tauri supports es2021
     target: ['es2021', 'chrome100', 'safari13'],
@@ -37,5 +40,9 @@ export default defineConfig({
     // produce sourcemaps for debug builds
     sourcemap: !!process.env.TAURI_ENV_DEBUG,
     outDir: 'build',
+    // Ensure assets are properly referenced for GitHub Pages
+    assetsDir: 'assets',
+    // Generate manifest for proper asset loading
+    manifest: true,
   }
 })

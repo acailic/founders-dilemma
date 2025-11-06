@@ -73,7 +73,7 @@ interface View {
 		const [desktopNavOpenedCookie, setDesktopNavOpenedCookie] = useCookie('desktop-nav-opened', 'true');
 		const desktopNavOpened = desktopNavOpenedCookie === 'true';
 		const toggleDesktopNav = () => setDesktopNavOpenedCookie(o => o === 'true' ? 'false' : 'true');
-		const [tipsVisible, { toggle: toggleTips }] = useDisclosure(true);
+		const [tipsVisible, { toggle: toggleTips }] = useDisclosure(false);
 
 	const [scroller, setScroller] = useState<HTMLElement | null>(null);
 	// load preferences using localForage

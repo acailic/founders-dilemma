@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 use rand::Rng;
 use super::state::GameState;
+use super::customers::{generate_customer_persona, calculate_segment_from_mrr};
 
 /// Quality level for features
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Quality {
     Quick,      // Ship fast, +momentum, +tech_debt
     Balanced,   // Normal trade-off
@@ -11,7 +12,7 @@ pub enum Quality {
 }
 
 /// Depth of code refactoring
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum RefactorDepth {
     Surface,    // Quick wins, minimal impact
     Medium,     // Balanced effort and results
@@ -19,7 +20,7 @@ pub enum RefactorDepth {
 }
 
 /// Types of experiments to run
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ExperimentType {
     Pricing,    // Test pricing strategies
     Onboarding, // Improve user onboarding
@@ -27,7 +28,7 @@ pub enum ExperimentType {
 }
 
 /// Types of content to launch
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ContentType {
     BlogPost,   // Educational article
     Tutorial,   // Step-by-step guide
@@ -36,7 +37,7 @@ pub enum ContentType {
 }
 
 /// Developer relations events
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum DevRelEvent {
     Conference, // Speak at conference
     Podcast,    // Podcast appearance
@@ -45,7 +46,7 @@ pub enum DevRelEvent {
 }
 
 /// Advertising channels
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum AdChannel {
     Google,     // Search ads
     Social,     // Social media ads
@@ -54,7 +55,7 @@ pub enum AdChannel {
 }
 
 /// Coaching focus areas
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum CoachingFocus {
     Skills,     // Technical skills
     Morale,     // Team morale
@@ -63,7 +64,7 @@ pub enum CoachingFocus {
 }
 
 /// Reasons for firing
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum FiringReason {
     Performance, // Underperforming
     Culture,     // Culture fit issues
@@ -71,7 +72,7 @@ pub enum FiringReason {
 }
 
 /// Player actions available each turn
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum Action {
     // PRODUCT (Focus: 1-2 slots)
     ShipFeature { quality: Quality },
@@ -348,6 +349,16 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 delta: state.velocity - old_velocity,
             });
 
+            // Create new self-serve customers if WAU growth is significant
+            let wau_growth_percent = ((state.wau as f64 - old_wau as f64) / old_wau as f64) * 100.0;
+            if wau_growth_percent > 5.0 {
+                let new_customer_count = (wau_growth_percent / 10.0).ceil() as usize;
+                for _ in 0..new_customer_count.min(3) {
+                    let customer = generate_customer_persona(super::customers::CustomerSegment::SelfServe, state.week, state);
+                    state.add_customer(customer);
+                }
+            }
+
             ActionResult {
                 success: true,
                 message: message.to_string(),
@@ -363,9 +374,18 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
             let base_deal_size = 500.0;
 
             let mut new_mrr = 0.0;
+            let mut new_customers = Vec::new();
+
             for _ in 0..*call_count {
                 if rng.gen_bool(conversion_rate) {
-                    new_mrr += base_deal_size * (0.8 + rng.gen_range(0.0..0.4));
+                    let deal_size = base_deal_size * (0.8 + rng.gen_range(0.0..0.4));
+                    new_mrr += deal_size;
+
+                    // Create customer persona
+                    let segment = calculate_segment_from_mrr(deal_size);
+                    let mut customer = generate_customer_persona(segment, state.week, state);
+                    customer.mrr_contribution = deal_size;
+                    new_customers.push(customer);
                 }
             }
 
@@ -377,6 +397,11 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 new_value: state.mrr,
                 delta: new_mrr,
             });
+
+            // Add new customers to state
+            for customer in new_customers {
+                state.add_customer(customer);
+            }
 
             // Sales takes energy
             let morale_cost = (*call_count as f64) * 0.5;
@@ -399,9 +424,19 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 delta: 1.0,
             });
 
+            let success_message = if new_mrr > 0.0 {
+                if let Some(customer) = state.customers.last() {
+                    format!("Closed deal with {}! ${:.0}/mo", customer.name, new_mrr)
+                } else {
+                    format!("Closed deals worth ${:.0}/mo!", new_mrr)
+                }
+            } else {
+                message
+            };
+
             ActionResult {
                 success: new_mrr > 0.0,
-                message,
+                message: success_message,
                 effects,
             }
         }
@@ -592,9 +627,16 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 delta: rep_gain,
             });
 
+            // Create new self-serve customers based on WAU gain
+            let new_customer_count = (wau_gain / 5.0).ceil() as usize;
+            for _ in 0..new_customer_count {
+                let customer = generate_customer_persona(super::customers::CustomerSegment::SelfServe, state.week, state);
+                state.add_customer(customer);
+            }
+
             ActionResult {
                 success: true,
-                message,
+                message: message.to_string(),
                 effects,
             }
         }
@@ -639,9 +681,16 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 delta: morale_boost,
             });
 
+            // Create new developer customers based on reputation gain
+            let new_customer_count = (rep_gain / 3.0).ceil() as usize;
+            for _ in 0..new_customer_count {
+                let customer = generate_customer_persona(super::customers::CustomerSegment::SelfServe, state.week, state);
+                state.add_customer(customer);
+            }
+
             ActionResult {
                 success: true,
-                message,
+                message: message.to_string(),
                 effects,
             }
         }
@@ -669,6 +718,24 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 new_value: state.bank,
                 delta: -budget,
             });
+
+            // Create new customers based on ad channel and WAU gain
+            let (selfserve_ratio, smb_ratio) = match channel {
+                AdChannel::Google | AdChannel::Display => (0.8, 0.2),
+                AdChannel::Social => (0.9, 0.1),
+                AdChannel::Influencer => (0.7, 0.3),
+            };
+
+            let new_customer_count = (wau_gain / 10.0).ceil() as usize;
+            for _ in 0..new_customer_count {
+                let segment = if rng.gen_bool(selfserve_ratio) {
+                    super::customers::CustomerSegment::SelfServe
+                } else {
+                    super::customers::CustomerSegment::SMB
+                };
+                let customer = generate_customer_persona(segment, state.week, state);
+                state.add_customer(customer);
+            }
 
             ActionResult {
                 success: wau_gain > 0.0,
@@ -709,7 +776,7 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
 
             ActionResult {
                 success: true,
-                message,
+                message: message.to_string(),
                 effects,
             }
         }
@@ -727,13 +794,12 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 delta: -burn_reduction,
             });
 
-            let (morale_hit, velocity_hit) = match reason {
+            let (morale_hit, velocity_hit): (f64, f64) = match reason {
                 FiringReason::Performance => (-8.0, -0.05),
                 FiringReason::Culture => (-12.0, -0.08),
                 FiringReason::Budget => (-5.0, -0.02),
             };
 
-            let morale_loss = morale_hit.abs() * (0.9 + rand::random::<f64>() * 0.2);
             let old_morale = state.morale;
             state.morale += morale_hit;
             effects.push(StatEffect {
@@ -743,7 +809,6 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
                 delta: morale_hit,
             });
 
-            let velocity_loss = velocity_hit.abs() * (0.9 + rand::random::<f64>() * 0.2);
             let old_velocity = state.velocity;
             state.velocity += velocity_hit;
             effects.push(StatEffect {
@@ -755,7 +820,7 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
 
             ActionResult {
                 success: true,
-                message,
+                message: message.to_string(),
                 effects,
             }
         }
@@ -785,7 +850,7 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
 
             ActionResult {
                 success: true,
-                message,
+                message: message.to_string(),
                 effects,
             }
         }
@@ -815,7 +880,7 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
 
             ActionResult {
                 success: true,
-                message,
+                message: message.to_string(),
                 effects,
             }
         }
@@ -846,7 +911,7 @@ pub fn resolve_action(state: &mut GameState, action: &Action) -> ActionResult {
 
             ActionResult {
                 success: true,
-                message,
+                message: message.to_string(),
                 effects,
             }
         }

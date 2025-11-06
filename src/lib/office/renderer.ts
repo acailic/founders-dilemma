@@ -7,6 +7,7 @@
 import {
   FurnitureType,
   ClutterType,
+  ActionType,
   type OfficeState,
   type Camera,
   type RenderContext,
@@ -26,6 +27,10 @@ import {
 } from './spatial';
 import { applyCamera } from './camera';
 import { getMoodColor } from './characters';
+import {
+  OfficeAnimationManager,
+  type CharacterAnimationSample
+} from './animationManager';
 
 // Cozy Stardew-inspired palette
 const PALETTE = {
@@ -56,10 +61,20 @@ const PALETTE = {
 // RENDERER CLASS
 // ============================================================================
 
+interface InteractionState {
+  hoveredTeamId: string | null;
+  selectedTeamId: string | null;
+}
+
 export class OfficeRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
   private lastFrameTime: number = 0;
+  private animationManager: OfficeAnimationManager;
+  private interactionState: InteractionState = {
+    hoveredTeamId: null,
+    selectedTeamId: null
+  };
 
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
@@ -71,6 +86,11 @@ export class OfficeRenderer {
 
     this.ctx = ctx;
     this.setupCanvas();
+    this.animationManager = new OfficeAnimationManager();
+  }
+
+  setInteractionState(state: InteractionState): void {
+    this.interactionState = state;
   }
 
   dispose(): void {
@@ -119,6 +139,8 @@ export class OfficeRenderer {
       deltaTime,
       timestamp: currentTime
     };
+
+    this.animationManager.update(state);
 
     // Clear canvas
     this.clear();
@@ -227,7 +249,12 @@ export class OfficeRenderer {
         continue;
       }
       const screenPos = gridToScreen(member.position, state.grid);
-      this.drawCharacter(member, screenPos, context);
+      const animationSample = this.animationManager.getCharacterSample(member, context.timestamp);
+      const interaction = {
+        hovered: this.interactionState.hoveredTeamId === member.id,
+        selected: this.interactionState.selectedTeamId === member.id
+      };
+      this.drawCharacter(member, screenPos, context, animationSample, interaction);
     }
   }
 
@@ -352,7 +379,13 @@ export class OfficeRenderer {
   /**
    * Draw character
    */
-  private drawCharacter(member: TeamMember, screenPos: Point, context: RenderContext): void {
+  private drawCharacter(
+    member: TeamMember,
+    screenPos: Point,
+    context: RenderContext,
+    animation: CharacterAnimationSample,
+    interaction: { hovered: boolean; selected: boolean }
+  ): void {
     const { ctx } = context;
 
     ctx.save();
@@ -364,15 +397,24 @@ export class OfficeRenderer {
     ctx.ellipse(0, TILE_HEIGHT * 0.55, TILE_WIDTH * 0.18, TILE_HEIGHT * 0.2, 0, 0, Math.PI * 2);
     ctx.fill();
 
+    ctx.save();
+    ctx.translate(animation.jitter, animation.bobOffset);
+
     // Character body (simplified)
     const moodColor = getMoodColor(member.mood);
 
     // Glow (mood indicator)
     ctx.strokeStyle = moodColor;
     ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.3;
+    const glowScale = animation.glowScale * (interaction.selected ? 1.45 : interaction.hovered ? 1.18 : 1);
+    const glowAlpha = Math.min(
+      0.9,
+      animation.glowAlpha + (interaction.selected ? 0.35 : interaction.hovered ? 0.18 : 0)
+    );
+
+    ctx.globalAlpha = glowAlpha;
     ctx.beginPath();
-    ctx.arc(0, -8, 20, 0, Math.PI * 2);
+    ctx.arc(0, -8, 20 * glowScale, 0, Math.PI * 2);
     ctx.stroke();
     ctx.globalAlpha = 1.0;
 
@@ -382,8 +424,14 @@ export class OfficeRenderer {
     this.roundedRectPath(ctx, -8, 0, 16, 20, 6);
     ctx.fill();
     ctx.lineWidth = 1.2;
-    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.strokeStyle = interaction.selected
+      ? 'rgba(255,255,255,0.65)'
+      : interaction.hovered
+        ? 'rgba(255,255,255,0.35)'
+        : 'rgba(0,0,0,0.25)';
     ctx.stroke();
+
+    this.drawCharacterArms(ctx, member, animation);
 
     // Head
     ctx.fillStyle = '#f5d0a9';
@@ -404,13 +452,124 @@ export class OfficeRenderer {
     ctx.quadraticCurveTo(0, -4, 4, -6);
     ctx.stroke();
 
-    // Name label
+    ctx.restore();
+
+    // Name label (static, no bob) - keep readable
     ctx.fillStyle = '#000';
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(member.name.split(' ')[0], 0, TILE_HEIGHT * 0.75);
 
     ctx.restore();
+  }
+
+  private drawCharacterArms(
+    ctx: CanvasRenderingContext2D,
+    member: TeamMember,
+    animation: CharacterAnimationSample
+  ): void {
+    const skinTone = '#f5d0a9';
+    const config = this.getArmConfig(member.currentAction);
+
+    const leftAngle = config.baseLeft + animation.armSwing * config.leftAmplitude;
+    const rightAngle = config.baseRight - animation.armSwing * config.rightAmplitude;
+
+    this.drawArm(ctx, -7.5, 4, leftAngle, config.length, skinTone);
+    this.drawArm(ctx, 7.5, 4, rightAngle, config.length, skinTone);
+
+    if (member.currentAction === ActionType.Calling) {
+      ctx.save();
+      ctx.translate(7.5, 4);
+      ctx.rotate(rightAngle);
+      ctx.fillStyle = '#4a5568';
+      ctx.fillRect(config.length - 3, -3, 3, 6);
+      ctx.restore();
+    }
+  }
+
+  private drawArm(
+    ctx: CanvasRenderingContext2D,
+    pivotX: number,
+    pivotY: number,
+    angle: number,
+    length: number,
+    skinTone: string
+  ): void {
+    ctx.save();
+    ctx.translate(pivotX, pivotY);
+    ctx.rotate(angle);
+    ctx.fillStyle = skinTone;
+    this.roundedRectPath(ctx, -1.6, 0, 3.2, length, 1.6);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  private getArmConfig(action: ActionType): {
+    baseLeft: number;
+    baseRight: number;
+    leftAmplitude: number;
+    rightAmplitude: number;
+    length: number;
+  } {
+    switch (action) {
+      case ActionType.Coding:
+        return {
+          baseLeft: -0.8,
+          baseRight: 0.8,
+          leftAmplitude: 0.35,
+          rightAmplitude: 0.35,
+          length: 12
+        };
+      case ActionType.Calling:
+        return {
+          baseLeft: -0.15,
+          baseRight: -1.2,
+          leftAmplitude: 0.25,
+          rightAmplitude: 0.3,
+          length: 13
+        };
+      case ActionType.Celebrating:
+        return {
+          baseLeft: -1.6,
+          baseRight: 1.6,
+          leftAmplitude: 0.45,
+          rightAmplitude: 0.45,
+          length: 14
+        };
+      case ActionType.Designing:
+      case ActionType.Writing:
+        return {
+          baseLeft: -0.45,
+          baseRight: 0.45,
+          leftAmplitude: 0.25,
+          rightAmplitude: 0.25,
+          length: 12
+        };
+      case ActionType.Walking:
+        return {
+          baseLeft: 0.3,
+          baseRight: -0.3,
+          leftAmplitude: 0.6,
+          rightAmplitude: 0.6,
+          length: 13
+        };
+      case ActionType.Break:
+        return {
+          baseLeft: -0.1,
+          baseRight: 0.1,
+          leftAmplitude: 0.18,
+          rightAmplitude: 0.18,
+          length: 11
+        };
+      default:
+        return {
+          baseLeft: 0.1,
+          baseRight: -0.1,
+          leftAmplitude: 0.25,
+          rightAmplitude: 0.25,
+          length: 12
+        };
+    }
   }
 
   /**

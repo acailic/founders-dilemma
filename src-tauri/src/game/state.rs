@@ -4,7 +4,9 @@ use uuid::Uuid;
 use super::actions::Action;
 use super::market_conditions::MarketCondition;
 use super::synergies::SpecializationPath;
-use super::progression::SeasonalChallenge;
+use super::progression::{SeasonalChallenge, action_unlock_key};
+use super::customers::{Customer, CustomerSegment, update_customer_satisfaction, update_customer_lifecycle};
+use super::competitors::{Competitor, generate_competitors, update_competitor_state, generate_competitor_action, calculate_market_share};
 
 /// Difficulty modes with different starting conditions and modifiers
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -180,7 +182,9 @@ pub struct GameState {
     pub incident_count: u32,
     pub last_break_week: u32,
     pub consecutive_ship_weeks: u8,
-    pub customer_segments: HashMap<String, u32>,
+    pub customers: Vec<Customer>,
+    pub competitors: Vec<Competitor>,
+    pub player_market_share: f64,
 }
 
 impl GameState {
@@ -193,7 +197,7 @@ impl GameState {
         let mut state = Self {
             game_id: Uuid::new_v4().to_string(),
             week: 0,
-            difficulty,
+            difficulty: difficulty.clone(),
             started_at: chrono::Utc::now().timestamp(),
 
             // Resources
@@ -246,13 +250,9 @@ impl GameState {
             incident_count: 0,
             last_break_week: 0,
             consecutive_ship_weeks: 0,
-            customer_segments: {
-                let mut map = HashMap::new();
-                map.insert("enterprise".to_string(), 0);
-                map.insert("smb".to_string(), 0);
-                map.insert("self_serve".to_string(), 100); // Starting users
-                map
-            },
+            customers: Vec::new(),
+            competitors: generate_competitors(&difficulty, 0),
+            player_market_share: 50.0,
         };
 
         state.update_derived_metrics();
@@ -336,11 +336,6 @@ impl GameState {
         // Update market conditions
         super::market_conditions::update_market_conditions(self);
 
-        // Check for new market conditions
-        if let Some(condition) = super::market_conditions::generate_market_condition(self, self.week) {
-            self.active_market_conditions.push(condition);
-        }
-
         // Update action history (keep last 12 weeks)
         if self.action_history.len() > 12 {
             self.action_history.remove(0);
@@ -357,6 +352,87 @@ impl GameState {
         // Track consecutive_ship_weeks - placeholder, update based on actions taken
         // If ShipFeature was taken this week, increment, else reset to 0
         // Since actions are not passed here, this might be updated elsewhere
+
+        // Update customer lifecycle
+        for customer in &mut self.customers {
+            update_customer_satisfaction(customer, self.nps, self.tech_debt, self.velocity);
+            update_customer_lifecycle(customer);
+        }
+
+        // Handle customer churn
+        let mut churned_mrr = 0.0;
+        self.customers.retain(|customer| {
+            if std::mem::discriminant(&customer.lifecycle_stage) == std::mem::discriminant(&super::customers::CustomerLifecycle::Churned) {
+                churned_mrr += customer.mrr_contribution;
+                false
+            } else {
+                true
+            }
+        });
+        self.mrr -= churned_mrr;
+
+        // Update competitor state (collect state data first to avoid borrow issues)
+        let state_velocity = self.velocity;
+        let state_wau = self.wau;
+        let state_mrr = self.mrr;
+
+        for competitor in &mut self.competitors {
+            update_competitor_state(competitor, state_velocity, state_wau, state_mrr);
+        }
+
+        // Generate competitor actions (collect first to avoid borrow issues)
+        let mut competitor_actions = Vec::new();
+        for competitor in &self.competitors {
+            if let Some(action) = generate_competitor_action(competitor, self) {
+                competitor_actions.push((competitor.id.clone(), action));
+            }
+        }
+
+        // Apply the actions
+        for (competitor_id, action) in competitor_actions {
+            if let Some(competitor) = self.competitors.iter_mut().find(|c| c.id == competitor_id) {
+                competitor.action_history.push(action.clone());
+                competitor.last_action_week = self.week;
+
+                // Wire competitor actions to market conditions
+                match action.action_type {
+                    super::competitors::CompetitorActionType::FundingRound => {
+                        let condition = super::market_conditions::generate_competitor_funding_condition(competitor, action.amount);
+                        self.active_market_conditions.push(condition);
+                    },
+                    super::competitors::CompetitorActionType::Acquisition => {
+                        competitor.is_acquired = true;
+                        competitor.aggressiveness *= 0.3; // Reduce aggressiveness after acquisition
+                        let condition = super::market_conditions::generate_competitor_acquisition_condition(competitor, action.amount);
+                        self.active_market_conditions.push(condition);
+                    },
+                    super::competitors::CompetitorActionType::PricingChange => {
+                        // Only trigger pricing war for undercut strategy
+                        if matches!(competitor.pricing_strategy, super::competitors::PricingStrategy::Undercut) {
+                            let condition = super::market_conditions::generate_pricing_war_condition(competitor);
+                            self.active_market_conditions.push(condition);
+                        }
+                    },
+                    _ => {} // Other actions don't trigger market conditions
+                }
+            }
+        }
+
+        // Recalculate market share
+        let market_shares = calculate_market_share(&self.competitors, self);
+        for (name, share) in market_shares {
+            if name == "Player" {
+                self.player_market_share = share;
+            } else {
+                // Update competitor market shares
+                if let Some(competitor) = self.competitors.iter_mut().find(|c| c.name == name) {
+                    competitor.market_share = share;
+                }
+            }
+        }
+
+        // Handle competitor acquisitions
+        self.competitors.retain(|c| !c.is_acquired);
 
         // Update derived metrics
         self.update_derived_metrics();
@@ -393,7 +469,8 @@ impl GameState {
 
     /// Check if an action is unlocked
     pub fn is_action_unlocked(&self, action: &Action) -> bool {
-        self.unlocked_actions.contains(&format!("{:?}", action))
+        let key = action_unlock_key(action);
+        self.unlocked_actions.contains(&key)
     }
 
     /// Get active modifiers from market conditions
@@ -418,13 +495,29 @@ impl GameState {
         }
     }
 
-    /// Get customer breakdown
-    pub fn get_customer_breakdown(&self) -> CustomerBreakdown {
-        CustomerBreakdown {
-            enterprise: *self.customer_segments.get("enterprise").unwrap_or(&0),
-            smb: *self.customer_segments.get("smb").unwrap_or(&0),
-            self_serve: *self.customer_segments.get("self_serve").unwrap_or(&0),
-        }
+    /// Get total customers
+    pub fn get_total_customers(&self) -> usize {
+        self.customers.len()
+    }
+
+    /// Get customers by segment
+    pub fn get_customers_by_segment(&self, segment: CustomerSegment) -> Vec<&Customer> {
+        super::customers::get_customers_by_segment(&self.customers, segment)
+    }
+
+    /// Get customer count by segment
+    pub fn get_customer_count_by_segment(&self, segment: CustomerSegment) -> usize {
+        self.get_customers_by_segment(segment).len()
+    }
+
+    /// Add a customer
+    pub fn add_customer(&mut self, customer: Customer) {
+        self.customers.push(customer);
+    }
+
+    /// Remove a customer by ID
+    pub fn remove_customer(&mut self, customer_id: &str) {
+        self.customers.retain(|c| c.id != customer_id);
     }
 
     /// Calculate market-adjusted metric
@@ -438,6 +531,30 @@ impl GameState {
             }
         }
         adjusted
+    }
+
+    /// Get competitor by name
+    pub fn get_competitor_by_name(&self, name: &str) -> Option<&Competitor> {
+        self.competitors.iter().find(|c| c.name == name)
+    }
+
+    /// Get most threatening competitor
+    pub fn get_most_threatening_competitor(&self) -> Option<&Competitor> {
+        super::competitors::get_most_threatening_competitor(&self.competitors)
+    }
+
+    /// Get total competitor funding
+    pub fn get_total_competitor_funding(&self) -> f64 {
+        self.competitors.iter().map(|c| c.total_funding).sum()
+    }
+
+    /// Get average competitor feature parity
+    pub fn get_average_competitor_feature_parity(&self) -> f64 {
+        if self.competitors.is_empty() {
+            0.0
+        } else {
+            self.competitors.iter().map(|c| c.feature_parity).sum::<f64>() / self.competitors.len() as f64
+        }
     }
 }
 

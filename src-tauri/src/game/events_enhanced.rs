@@ -1,7 +1,15 @@
 use serde::{Deserialize, Serialize};
 use rand::Rng;
 use std::collections::HashMap;
-use super::state::{GameState, DifficultyMode};
+use super::state::{GameState, DifficultyMode, WeekSnapshot};
+use super::customers::{get_random_customer, CustomerSegment, get_at_risk_customers, CustomerLifecycle};
+use super::competitors::{get_most_threatening_competitor, get_random_competitor, CompetitorActionType};
+
+fn can_trigger_event(cooldowns: &HashMap<String, u32>, event_id: &str) -> bool {
+    cooldowns
+        .get(event_id)
+        .map_or(true, |remaining| *remaining == 0)
+}
 
 /// Enhanced event system with conditional events and meaningful choices
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -48,11 +56,6 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     let mut rng = rand::thread_rng();
     let mut events = Vec::new();
 
-    // Helper to check if event can trigger (not on cooldown)
-    let can_trigger = |event_id: &str| -> bool {
-        !state.event_cooldowns.contains_key(event_id) || state.event_cooldowns[event_id] == 0
-    };
-
     // Helper to get difficulty modifier
     let difficulty_mod = match state.difficulty {
         DifficultyMode::IndieBootstrap => 1.0,
@@ -65,7 +68,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     let growth_stagnant = state.history.len() >= 8 && state.history.iter().rev().take(8).all(|s| s.momentum < 0.03);
 
     // 1. Technical Debt Crisis (70%+ tech debt)
-    if state.tech_debt > 70.0 && rng.gen_bool(0.3) && can_trigger("tech_debt_crisis") {
+    if state.tech_debt > 70.0 && rng.gen_bool(0.3) && can_trigger_event(&state.event_cooldowns, "tech_debt_crisis") {
         events.push(GameEvent {
             id: "tech_debt_crisis".to_string(),
             week: state.week,
@@ -137,12 +140,22 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 2. Viral Growth Opportunity (high NPS + low tech debt)
-    if state.nps > 60.0 && state.tech_debt < 35.0 && state.wau > 200 && rng.gen_bool(0.15) && can_trigger("viral_moment") {
+    if state.nps > 60.0 && state.tech_debt < 35.0 && state.wau > 200 && rng.gen_bool(0.15) && can_trigger_event(&state.event_cooldowns, "viral_moment") {
+        // Get a random customer to feature in the viral moment
+        let featured_customer = if let Some(customer) = get_random_customer(&state.customers, None) {
+            customer.clone()
+        } else {
+            super::customers::generate_customer_persona(CustomerSegment::SMB, state.week, state)
+        };
+
         events.push(GameEvent {
             id: "viral_moment".to_string(),
             week: state.week,
-            title: "Product Hunt Launch".to_string(),
-            description: "You got featured on Product Hunt! Traffic is surging. Your infrastructure is holding but you're at 80% capacity.".to_string(),
+            title: format!("{} Loves Your Product!", featured_customer.company),
+            description: format!(
+                "{} from {} just shared their success story on Twitter: \"{} finally solved our problem!\" It's going viral. Traffic is surging but your infrastructure is at 80% capacity.",
+                featured_customer.name, featured_customer.company, featured_customer.story
+            ),
             event_type: EnhancedEventType::Dilemma {
                 choices: vec![
                     EventChoice {
@@ -199,16 +212,23 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 3. Major Client Deal (requires sacrifice)
-    if state.mrr > 2000.0 && state.reputation > 50.0 && rng.gen_bool(0.2) && can_trigger("major_client_deal") {
+    if state.mrr > 2000.0 && state.reputation > 50.0 && rng.gen_bool(0.2) && can_trigger_event(&state.event_cooldowns, "major_client_deal") {
         let deal_size = 5000.0 + rng.gen_range(0.0..3000.0);
+
+        // Get a random enterprise customer or generate a new one
+        let customer = if let Some(existing) = get_random_customer(&state.customers, Some(CustomerSegment::Enterprise)) {
+            existing.clone()
+        } else {
+            super::customers::generate_customer_persona(CustomerSegment::Enterprise, state.week, state)
+        };
 
         events.push(GameEvent {
             id: "major_client_deal".to_string(),
             week: state.week,
-            title: "Enterprise Client Offer".to_string(),
+            title: format!("{} Wants to Upgrade", customer.company),
             description: format!(
-                "A Fortune 500 company wants to sign for ${:.0}/month, but they need custom features delivered in 4 weeks. It's aggressive but possible if you cut corners.",
-                deal_size
+                "{} from {} wants to sign for ${:.0}/month, but they need custom features delivered in 4 weeks. It's aggressive but possible if you cut corners.",
+                customer.name, customer.company, deal_size
             ),
             event_type: EnhancedEventType::Dilemma {
                 choices: vec![
@@ -275,8 +295,681 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("major_client_deal".to_string(), 10);
     }
 
-    // 4. Fundraising Opportunity (18+ months runway)
-    if state.runway_months > 18.0 && state.wau > 500 && state.reputation > 60.0 && rng.gen_bool(0.15) && can_trigger("vc_offer") {
+    // Customer Churn Event
+    if !get_at_risk_customers(&state.customers).is_empty() && rng.gen_bool(0.25) && can_trigger_event(&state.event_cooldowns, "customer_churn_warning") {
+        if let Some(customer) = get_random_customer(&state.customers, None) {
+            if let Some(latest_feedback) = customer.feedback_history.last() {
+                events.push(GameEvent {
+                    id: "customer_churn_warning".to_string(),
+                    week: state.week,
+                    title: format!("{} is Considering Leaving", customer.company),
+                    description: format!(
+                        "{} from {} hasn't been happy lately. Their feedback: '{}'. They're evaluating alternatives.",
+                        customer.name, customer.company, latest_feedback.quote
+                    ),
+                    event_type: EnhancedEventType::Dilemma {
+                        choices: vec![
+                            EventChoice {
+                                label: "Reach out personally".to_string(),
+                                description: "Call them directly to understand their concerns and offer solutions.".to_string(),
+                                short_term: "Time investment, potential save".to_string(),
+                                long_term: "Stronger relationship, customer retention".to_string(),
+                                wisdom: "Most churn can be prevented with communication. Listen more than you talk.".to_string(),
+                                effects: vec![
+                                    EventEffect {
+                                        stat_name: "Morale".to_string(),
+                                        change: 5.0 * difficulty_mod,
+                                        description: "Meaningful customer interaction".to_string(),
+                                    },
+                                    EventEffect {
+                                        stat_name: "NPS".to_string(),
+                                        change: 5.0 * difficulty_mod,
+                                        description: "Personal outreach".to_string(),
+                                    },
+                                ],
+                            },
+                            EventChoice {
+                                label: "Let them go".to_string(),
+                                description: "Focus on acquiring new customers instead of retaining this one.".to_string(),
+                                short_term: "Free up focus, potential MRR loss".to_string(),
+                                long_term: "Focus on growth, churn happens".to_string(),
+                                wisdom: "Not all customers are worth saving. Sometimes it's better to part ways.".to_string(),
+                                effects: vec![
+                                    EventEffect {
+                                        stat_name: "Focus".to_string(),
+                                        change: 1.0 * difficulty_mod,
+                                        description: "Freed up bandwidth".to_string(),
+                                    },
+                                    EventEffect {
+                                        stat_name: "MRR".to_string(),
+                                        change: -customer.mrr_contribution * difficulty_mod,
+                                        description: "Lost customer revenue".to_string(),
+                                    },
+                                ],
+                            },
+                        ],
+                    },
+                    prerequisites: vec!["At-risk customers exist".to_string()],
+                    cooldown_weeks: 6,
+                    follow_up_event_id: None,
+                    difficulty_modifier: difficulty_mod,
+                });
+                state.event_cooldowns.insert("customer_churn_warning".to_string(), 6);
+            }
+        }
+    }
+
+    // 3. Big Logo Signs Event - New high-MRR enterprise customers
+    if let Some(customer) = get_random_customer(&state.customers, Some(CustomerSegment::Enterprise)) {
+        if matches!(customer.lifecycle_stage, CustomerLifecycle::Active) && customer.mrr_contribution > 5000.0 && rng.gen_bool(0.25) && can_trigger_event(&state.event_cooldowns, "big_logo_signs") {
+            events.push(GameEvent {
+                id: "big_logo_signs".to_string(),
+                week: state.week,
+                title: format!("{} Joins Your Customer Roster", customer.company),
+                description: format!(
+                    "{} from {} just signed up! They're contributing ${:.0}/month and could be great for your credibility. Consider featuring them prominently on your website.",
+                    customer.name, customer.company, customer.mrr_contribution
+                ),
+                event_type: EnhancedEventType::Dilemma {
+                    choices: vec![
+                        EventChoice {
+                            label: "Feature Them Prominently".to_string(),
+                            description: "Add their logo to your homepage and case study. Costs 1 focus slot.".to_string(),
+                            short_term: "Reputation boost, credibility signal".to_string(),
+                            long_term: "Attracts similar customers".to_string(),
+                            wisdom: "Social proof is powerful. Big logos on your site signal legitimacy to prospects.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 15.0 * difficulty_mod,
+                                    description: "Big customer validation".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Focus".to_string(),
+                                    change: -1.0 * difficulty_mod,
+                                    description: "Design and integration work".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Mention in Newsletter".to_string(),
+                            description: "Share their story in your next newsletter. Low effort, some impact.".to_string(),
+                            short_term: "Small reputation gain".to_string(),
+                            long_term: "Organic customer attraction".to_string(),
+                            wisdom: "Every customer success story matters. Share them consistently.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 5.0 * difficulty_mod,
+                                    description: "Customer story sharing".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Keep It Quiet".to_string(),
+                            description: "Don't make a big deal. Focus on serving them well instead.".to_string(),
+                            short_term: "No immediate impact".to_string(),
+                            long_term: "Stronger relationship through service".to_string(),
+                            wisdom: "Sometimes the best marketing is just doing great work.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "NPS".to_string(),
+                                    change: 3.0 * difficulty_mod,
+                                    description: "Focused service".to_string(),
+                                },
+                            ],
+                        },
+                    ],
+                },
+                prerequisites: vec!["New high-MRR enterprise customer".to_string()],
+                cooldown_weeks: 8,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("big_logo_signs".to_string(), 8);
+        }
+    }
+
+    // Customer Champion Event - Customer becomes a champion
+    if let Some(customer) = get_random_customer(&state.customers, None) {
+        if matches!(customer.lifecycle_stage, CustomerLifecycle::Champion) && rng.gen_bool(0.2) && can_trigger_event(&state.event_cooldowns, "customer_champion") {
+            events.push(GameEvent {
+                id: "customer_champion".to_string(),
+                week: state.week,
+                title: format!("{} Becomes Your Biggest Advocate", customer.company),
+                description: format!(
+                    "{} from {} is absolutely thrilled! They're telling everyone about you: \"{}\". They want to help you grow.",
+                    customer.name, customer.company, customer.story
+                ),
+                event_type: EnhancedEventType::Dilemma {
+                    choices: vec![
+                        EventChoice {
+                            label: "Partner with Them for Marketing".to_string(),
+                            description: "Co-create content and case studies. They become your marketing partner.".to_string(),
+                            short_term: "Reputation boost, organic growth".to_string(),
+                            long_term: "Ongoing advocacy, customer acquisition".to_string(),
+                            wisdom: "Happy customers are your best marketers. Invest in relationships that compound.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 20.0 * difficulty_mod,
+                                    description: "Champion advocacy".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "WAU".to_string(),
+                                    change: 300.0 * difficulty_mod,
+                                    description: "Organic referrals".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "NPS".to_string(),
+                                    change: 15.0 * difficulty_mod,
+                                    description: "Social proof".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Ask for a Testimonial".to_string(),
+                            description: "Get a written testimonial for your website. Simple but effective.".to_string(),
+                            short_term: "Small reputation gain".to_string(),
+                            long_term: "Credibility boost for prospects".to_string(),
+                            wisdom: "Testimonials convert browsers to buyers. Collect them systematically.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 8.0 * difficulty_mod,
+                                    description: "Customer testimonial".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "NPS".to_string(),
+                                    change: 5.0 * difficulty_mod,
+                                    description: "Public endorsement".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Focus on Serving Them Well".to_string(),
+                            description: "Keep delivering exceptional service. Let their satisfaction speak for itself.".to_string(),
+                            short_term: "No immediate impact".to_string(),
+                            long_term: "Loyal champion, potential referrals".to_string(),
+                            wisdom: "Sometimes the best marketing is just doing great work consistently.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "NPS".to_string(),
+                                    change: 8.0 * difficulty_mod,
+                                    description: "Continued satisfaction".to_string(),
+                                },
+                            ],
+                        },
+                    ],
+                },
+                prerequisites: vec!["Champion customer exists".to_string()],
+                cooldown_weeks: 10,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("customer_champion".to_string(), 10);
+        }
+    }
+
+    // Competitor Feature Launch Event
+    if let Some(competitor) = get_most_threatening_competitor(&state.competitors) {
+        if competitor.feature_parity > 70.0 && state.velocity < 1.0 && rng.gen_bool(0.20) && can_trigger_event(&state.event_cooldowns, "competitor_feature_launch") {
+            let features = vec![
+                "advanced analytics", "mobile app", "API integrations", "enterprise SSO",
+                "real-time collaboration", "AI-powered insights", "automated workflows",
+                "advanced security", "custom dashboards", "integrations marketplace"
+            ];
+            let feature_name = features[rng.gen_range(0..features.len())];
+
+            events.push(GameEvent {
+                id: "competitor_feature_launch".to_string(),
+                week: state.week,
+                title: format!("{} Launches Feature You Don't Have", competitor.name),
+                description: format!("{} just shipped {} - a feature your customers have been requesting. They're gaining ground. Your feature parity is falling behind.", competitor.name, feature_name),
+                event_type: EnhancedEventType::Dilemma {
+                    choices: vec![
+                        EventChoice {
+                            label: "Rush to match their feature".to_string(),
+                            description: "Ship fast to stay competitive, but cut corners.".to_string(),
+                            short_term: "Stay competitive quickly".to_string(),
+                            long_term: "Technical debt increases, team burnout".to_string(),
+                            wisdom: "Shipping fast often means shipping debt. Know when speed matters more than quality.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Tech Debt".to_string(),
+                                    change: 15.0 * difficulty_mod,
+                                    description: "Rushed implementation".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Velocity".to_string(),
+                                    change: 0.2 * difficulty_mod,
+                                    description: "Short-term speed boost".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: -5.0 * difficulty_mod,
+                                    description: "Crunch mode".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Build it properly, take time".to_string(),
+                            description: "Do it right, even if it takes longer.".to_string(),
+                            short_term: "Customers notice delay".to_string(),
+                            long_term: "Better product, sustainable velocity".to_string(),
+                            wisdom: "Your long-term competitive advantage is building better software, not matching features.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Velocity".to_string(),
+                                    change: 0.1 * difficulty_mod,
+                                    description: "Proper implementation".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: -10.0 * difficulty_mod,
+                                    description: "Feels slow".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: -5.0 * difficulty_mod,
+                                    description: "Customers notice delay".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Ignore it, focus on differentiation".to_string(),
+                            description: "Double down on what makes you unique.".to_string(),
+                            short_term: "Risk losing customers to competitor".to_string(),
+                            long_term: "Strong positioning, loyal users".to_string(),
+                            wisdom: "You can't be everything to everyone. Focus on being uniquely valuable to your best customers.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: 10.0 * difficulty_mod,
+                                    description: "Confident in differentiation".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 5.0 * difficulty_mod,
+                                    description: "Bold positioning".to_string(),
+                                },
+                            ],
+                        },
+                    ],
+                },
+                prerequisites: vec!["Competitor feature parity > 70%".to_string(), "Your velocity < 1.0".to_string()],
+                cooldown_weeks: 8,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("competitor_feature_launch".to_string(), 8);
+        }
+    }
+
+    // Pricing War Event
+    if let Some(competitor) = get_random_competitor(&state.competitors) {
+        if matches!(competitor.pricing_strategy, super::competitors::PricingStrategy::Undercut) && rng.gen_bool(0.15) && can_trigger_event(&state.event_cooldowns, "pricing_war") {
+            events.push(GameEvent {
+                id: "pricing_war".to_string(),
+                week: state.week,
+                title: format!("{} Slashes Prices", competitor.name),
+                description: format!("{} just cut their prices by 30%. Your customers are asking why you're more expensive. Some are threatening to switch.", competitor.name),
+                event_type: EnhancedEventType::Dilemma {
+                    choices: vec![
+                        EventChoice {
+                            label: "Match their pricing".to_string(),
+                            description: "Protect market share at the cost of margins.".to_string(),
+                            short_term: "Maintain market share".to_string(),
+                            long_term: "Pressure on profitability".to_string(),
+                            wisdom: "Price wars destroy margins. Only fight them if you have deeper pockets or can operate more efficiently.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "MRR".to_string(),
+                                    change: -0.2 * state.mrr * difficulty_mod,
+                                    description: "Price cut impact".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "NPS".to_string(),
+                                    change: 5.0 * difficulty_mod,
+                                    description: "Customers happy with price".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: -10.0 * difficulty_mod,
+                                    description: "Race to bottom".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Hold pricing, emphasize value".to_string(),
+                            description: "You're worth the premium. Prove it.".to_string(),
+                            short_term: "Lose price-sensitive customers".to_string(),
+                            long_term: "Premium positioning, higher margins".to_string(),
+                            wisdom: "Premium products need premium positioning. Cheap is a strategy, not an accident.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 10.0 * difficulty_mod,
+                                    description: "Premium positioning".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Churn Rate".to_string(),
+                                    change: 10.0 * difficulty_mod,
+                                    description: "Lose price-sensitive customers".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: 5.0 * difficulty_mod,
+                                    description: "Confidence in value".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Raise prices, go upmarket".to_string(),
+                            description: "Bold move: position as premium alternative.".to_string(),
+                            short_term: "Lose SMB customers, gain enterprise".to_string(),
+                            long_term: "Higher MRR per customer, focused sales".to_string(),
+                            wisdom: "Moving upmarket is hard but profitable. You need the sales skills and product to support enterprise customers.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "MRR".to_string(),
+                                    change: 0.15 * state.mrr * difficulty_mod,
+                                    description: "Higher prices".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Churn Rate".to_string(),
+                                    change: -20.0 * difficulty_mod,
+                                    description: "Lose SMB, keep enterprise".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 15.0 * difficulty_mod,
+                                    description: "Premium brand".to_string(),
+                                },
+                            ],
+                        },
+                    ],
+                },
+                prerequisites: vec!["Competitor uses undercut pricing".to_string()],
+                cooldown_weeks: 10,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("pricing_war".to_string(), 10);
+        }
+    }
+
+    // Competitor Funding Announcement Event
+    if let Some(competitor) = get_random_competitor(&state.competitors) {
+        if competitor.action_history.iter().any(|a| matches!(a.action_type, CompetitorActionType::FundingRound)) && rng.gen_bool(0.25) && can_trigger_event(&state.event_cooldowns, "competitor_funding") {
+            let funding_amount = competitor.total_funding / 1_000_000.0;
+
+            events.push(GameEvent {
+                id: "competitor_funding".to_string(),
+                week: state.week,
+                title: format!("{} Raises ${:.0}M", competitor.name, funding_amount),
+                description: format!("{} just announced a ${:.0}M funding round. They're hiring aggressively and planning a major marketing push. Your investors are asking about your plans.", competitor.name, funding_amount),
+                event_type: EnhancedEventType::Dilemma {
+                    choices: vec![
+                        EventChoice {
+                            label: "Accelerate fundraising".to_string(),
+                            description: "Use their news as urgency to close your round.".to_string(),
+                            short_term: "Momentum for fundraising".to_string(),
+                            long_term: "Pressure to grow fast".to_string(),
+                            wisdom: "Competition creates fundraising urgency. Use it, but don't let it control your timeline.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 10.0 * difficulty_mod,
+                                    description: "Fundraising momentum".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: -5.0 * difficulty_mod,
+                                    description: "Pressure".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Focus on profitability".to_string(),
+                            description: "Prove you don't need to raise. Build a sustainable business.".to_string(),
+                            short_term: "Investor skepticism".to_string(),
+                            long_term: "Customer-funded independence".to_string(),
+                            wisdom: "Bootstrapping is harder but creates real optionality. Funded companies often can't say no to growth.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: 15.0 * difficulty_mod,
+                                    description: "Independence pride".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: -10.0 * difficulty_mod,
+                                    description: "Investor worries".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Velocity".to_string(),
+                                    change: 0.1 * difficulty_mod,
+                                    description: "Focus on product".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Ignore the noise".to_string(),
+                            description: "Don't commit either way. Preserve optionality.".to_string(),
+                            short_term: "No immediate impact".to_string(),
+                            long_term: "Keep all options open".to_string(),
+                            wisdom: "Sometimes the best strategy is patience. Let others define themselves before you react.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: 5.0 * difficulty_mod,
+                                    description: "Zen approach".to_string(),
+                                },
+                            ],
+                        },
+                    ],
+                },
+                prerequisites: vec!["Competitor recently raised funding".to_string()],
+                cooldown_weeks: 12,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("competitor_funding".to_string(), 12);
+        }
+    }
+
+    // Competitor Acquisition Event
+    if state.mrr > 50_000.0 && state.reputation > 60.0 && state.nps > 40.0 && rng.gen_bool(0.10) && can_trigger_event(&state.event_cooldowns, "competitor_acquisition_opportunity") {
+        if let Some(competitor) = get_random_competitor(&state.competitors) {
+            let acquisition_amount = match competitor.funding_stage {
+                super::competitors::FundingStage::Bootstrapped => 50.0,
+                super::competitors::FundingStage::Seed => 100.0,
+                super::competitors::FundingStage::SeriesA => 150.0,
+                super::competitors::FundingStage::SeriesB => 200.0,
+                _ => 300.0,
+            };
+
+            events.push(GameEvent {
+                id: "competitor_acquisition_opportunity".to_string(),
+                week: state.week,
+                title: format!("{} Acquired for ${:.0}M", competitor.name, acquisition_amount),
+                description: format!("{} was just acquired by [BigCorp] for ${:.0}M. The industry is consolidating. Your investors are asking if you'd consider acquisition offers.", competitor.name, acquisition_amount),
+                event_type: EnhancedEventType::Dilemma {
+                    choices: vec![
+                        EventChoice {
+                            label: "Signal openness to acquisition".to_string(),
+                            description: "Let it be known you're open to the right offer.".to_string(),
+                            short_term: "Acquisition interest increases".to_string(),
+                            long_term: "Potential acquisition offers".to_string(),
+                            wisdom: "Being open to acquisition can be strategic, but it changes how people interact with you.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 20.0 * difficulty_mod,
+                                    description: "Acquisition interest".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: -10.0 * difficulty_mod,
+                                    description: "Team worries".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Publicly commit to independence".to_string(),
+                            description: "You're building for the long term, not a quick exit.".to_string(),
+                            short_term: "Some investors exit".to_string(),
+                            long_term: "Focused on long-term vision".to_string(),
+                            wisdom: "Public commitments matter. Saying you're independent signals you're serious about the long game.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: 15.0 * difficulty_mod,
+                                    description: "Mission-driven".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Reputation".to_string(),
+                                    change: 10.0 * difficulty_mod,
+                                    description: "Bold independence".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Stay quiet, keep options open".to_string(),
+                            description: "Don't commit either way. Preserve optionality.".to_string(),
+                            short_term: "No immediate impact".to_string(),
+                            long_term: "Maximum flexibility".to_string(),
+                            wisdom: "Optionality is valuable. Don't burn bridges or close doors prematurely.".to_string(),
+                            effects: vec![
+                                // No effects - preserve optionality
+                            ],
+                        },
+                    ],
+                },
+                prerequisites: vec!["Strong company metrics".to_string(), "Industry consolidation".to_string()],
+                cooldown_weeks: 16,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("competitor_acquisition_opportunity".to_string(), 16);
+        }
+    }
+
+    // Talent Poaching Event
+    if let Some(competitor) = get_random_competitor(&state.competitors) {
+        if matches!(competitor.funding_stage, super::competitors::FundingStage::SeriesA | super::competitors::FundingStage::SeriesB | super::competitors::FundingStage::SeriesC | super::competitors::FundingStage::PublicCompany) && state.morale > 70.0 && rng.gen_bool(0.12) && can_trigger_event(&state.event_cooldowns, "talent_poaching") {
+            events.push(GameEvent {
+                id: "talent_poaching".to_string(),
+                week: state.week,
+                title: format!("{} Poaching Your Team", competitor.name),
+                description: format!("{} is recruiting your engineers with 50% salary bumps and equity packages. You've already lost one person. Others are getting calls.", competitor.name),
+                event_type: EnhancedEventType::Dilemma {
+                    choices: vec![
+                        EventChoice {
+                            label: "Match their offers".to_string(),
+                            description: "Expensive, but keeps the team intact.".to_string(),
+                            short_term: "Team stays, burn increases".to_string(),
+                            long_term: "Sustainable but costly".to_string(),
+                            wisdom: "Talent wars are expensive. Sometimes it's cheaper to let people go and hire differently.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Burn".to_string(),
+                                    change: 0.3 * state.burn * difficulty_mod,
+                                    description: "Salary increases".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: 10.0 * difficulty_mod,
+                                    description: "Feel valued".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Improve culture, not compensation".to_string(),
+                            description: "People stay for mission, not just money.".to_string(),
+                            short_term: "Some team members leave".to_string(),
+                            long_term: "More committed remaining team".to_string(),
+                            wisdom: "Culture beats compensation long-term. The best people want to work on something meaningful.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: 5.0 * difficulty_mod,
+                                    description: "Mission focus".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Velocity".to_string(),
+                                    change: 0.1 * difficulty_mod,
+                                    description: "More committed team".to_string(),
+                                },
+                            ],
+                        },
+                        EventChoice {
+                            label: "Let them go, hire differently".to_string(),
+                            description: "Painful transition, but opportunity to rebuild.".to_string(),
+                            short_term: "Team disruption, velocity hit".to_string(),
+                            long_term: "Fresh perspectives, cost control".to_string(),
+                            wisdom: "Sometimes you need to let go to grow. New people bring new energy and ideas.".to_string(),
+                            effects: vec![
+                                EventEffect {
+                                    stat_name: "Morale".to_string(),
+                                    change: -20.0 * difficulty_mod,
+                                    description: "Feels like giving up".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Velocity".to_string(),
+                                    change: -0.2 * difficulty_mod,
+                                    description: "Short-term disruption".to_string(),
+                                },
+                                EventEffect {
+                                    stat_name: "Burn".to_string(),
+                                    change: -0.1 * state.burn * difficulty_mod,
+                                    description: "Hire junior talent".to_string(),
+                                },
+                            ],
+                        },
+                    ],
+                },
+                prerequisites: vec!["Well-funded competitor".to_string(), "High team morale".to_string()],
+                cooldown_weeks: 10,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("talent_poaching".to_string(), 10);
+        }
+    }
+
+    // Competitor Product Pivot Event
+    if let Some(competitor) = get_random_competitor(&state.competitors) {
+        if competitor.feature_parity < 40.0 && rng.gen_bool(0.08) && can_trigger_event(&state.event_cooldowns, "competitor_pivot") {
+            events.push(GameEvent {
+                id: "competitor_pivot".to_string(),
+                week: state.week,
+                title: format!("{} Pivots Away from Your Market", competitor.name),
+                description: format!("{} announced they're pivoting to a different market. One less competitor to worry about - or a sign that your market isn't as attractive as you thought?", competitor.name),
+                event_type: EnhancedEventType::Automatic {
+                    effects: vec![
+                        EventEffect {
+                            stat_name: "Morale".to_string(),
+                            change: 10.0 * difficulty_mod,
+                            description: "One less threat".to_string(),
+                        },
+                        EventEffect {
+                            stat_name: "Reputation".to_string(),
+                            change: 5.0 * difficulty_mod,
+                            description: "Market validation".to_string(),
+                        },
+                    ],
+                },
+                prerequisites: vec!["Struggling competitor".to_string()],
+                cooldown_weeks: 20,
+                follow_up_event_id: None,
+                difficulty_modifier: difficulty_mod,
+            });
+            state.event_cooldowns.insert("competitor_pivot".to_string(), 20);
+        }
+    }
+    if state.runway_months > 18.0 && state.wau > 500 && state.reputation > 60.0 && rng.gen_bool(0.15) && can_trigger_event(&state.event_cooldowns, "vc_offer") {
         let offer_amount = 2_000_000.0;
         let valuation = 10_000_000.0;
 
@@ -351,7 +1044,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 5. Key Employee Burnout
-    if state.morale < 50.0 && state.week > 12 && rng.gen_bool(0.25) && can_trigger("key_employee_burnout") {
+    if state.morale < 50.0 && state.week > 12 && rng.gen_bool(0.25) && can_trigger_event(&state.event_cooldowns, "key_employee_burnout") {
         events.push(GameEvent {
             id: "key_employee_burnout".to_string(),
             week: state.week,
@@ -418,7 +1111,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 6. Competitor Launch (random at any time)
-    if state.week > 8 && rng.gen_bool(0.1) && can_trigger("competitor_launch") {
+    if state.week > 8 && rng.gen_bool(0.1) && can_trigger_event(&state.event_cooldowns, "competitor_launch") {
         events.push(GameEvent {
             id: "competitor_launch".to_string(),
             week: state.week,
@@ -449,7 +1142,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     // New Strategic Dilemmas
 
     // 1. Pivot Opportunity
-    if growth_stagnant && rng.gen_bool(0.4) && can_trigger("pivot_opportunity") {
+    if growth_stagnant && rng.gen_bool(0.4) && can_trigger_event(&state.event_cooldowns, "pivot_opportunity") {
         events.push(GameEvent {
             id: "pivot_opportunity".to_string(),
             week: state.week,
@@ -511,7 +1204,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 2. Acquisition Offer
-    if state.reputation > 70.0 && state.mrr > 50_000.0 && rng.gen_bool(0.2) && can_trigger("acquisition_offer") {
+    if state.reputation > 70.0 && state.mrr > 50_000.0 && rng.gen_bool(0.2) && can_trigger_event(&state.event_cooldowns, "acquisition_offer") {
         events.push(GameEvent {
             id: "acquisition_offer".to_string(),
             week: state.week,
@@ -564,7 +1257,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 3. Key Partnership
-    if state.reputation > 60.0 && rng.gen_bool(0.15) && can_trigger("key_partnership") {
+    if state.reputation > 60.0 && rng.gen_bool(0.15) && can_trigger_event(&state.event_cooldowns, "key_partnership") {
         events.push(GameEvent {
             id: "key_partnership".to_string(),
             week: state.week,
@@ -616,7 +1309,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 4. Team Conflict
-    if state.morale < 60.0 && state.team_size > 3 && rng.gen_bool(0.3) && can_trigger("team_conflict") {
+    if state.morale < 60.0 && state.team_size > 3 && rng.gen_bool(0.3) && can_trigger_event(&state.event_cooldowns, "team_conflict") {
         events.push(GameEvent {
             id: "team_conflict".to_string(),
             week: state.week,
@@ -692,7 +1385,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 5. Press Opportunity
-    if state.wau > 1000 && state.reputation > 50.0 && rng.gen_bool(0.2) && can_trigger("press_opportunity") {
+    if state.wau > 1000 && state.reputation > 50.0 && rng.gen_bool(0.2) && can_trigger_event(&state.event_cooldowns, "press_opportunity") {
         events.push(GameEvent {
             id: "press_opportunity".to_string(),
             week: state.week,
@@ -754,7 +1447,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 6. Technical Rewrite
-    if state.tech_debt > 80.0 && state.velocity < 0.5 && rng.gen_bool(0.35) && can_trigger("technical_rewrite") {
+    if state.tech_debt > 80.0 && state.velocity < 0.5 && rng.gen_bool(0.35) && can_trigger_event(&state.event_cooldowns, "technical_rewrite") {
         events.push(GameEvent {
             id: "technical_rewrite".to_string(),
             week: state.week,
@@ -825,7 +1518,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 7. Competitor Acquisition
-    if state.week > 20 && rng.gen_bool(0.1) && can_trigger("competitor_acquisition") {
+    if state.week > 20 && rng.gen_bool(0.1) && can_trigger_event(&state.event_cooldowns, "competitor_acquisition") {
         events.push(GameEvent {
             id: "competitor_acquisition".to_string(),
             week: state.week,
@@ -887,7 +1580,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 8. Regulatory Audit
-    if matches!(state.difficulty, DifficultyMode::RegulatedFintech) && state.compliance_risk > 60.0 && rng.gen_bool(0.4) && can_trigger("regulatory_audit") {
+    if matches!(state.difficulty, DifficultyMode::RegulatedFintech) && state.compliance_risk > 60.0 && rng.gen_bool(0.4) && can_trigger_event(&state.event_cooldowns, "regulatory_audit") {
         events.push(GameEvent {
             id: "regulatory_audit".to_string(),
             week: state.week,
@@ -949,7 +1642,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // 9. Viral Moment Gone Wrong
-    if state.wau_growth_rate > 30.0 && rng.gen_bool(0.25) && can_trigger("viral_moment_gone_wrong") {
+    if state.wau_growth_rate > 30.0 && rng.gen_bool(0.25) && can_trigger_event(&state.event_cooldowns, "viral_moment_gone_wrong") {
         events.push(GameEvent {
             id: "viral_moment_gone_wrong".to_string(),
             week: state.week,
@@ -1002,7 +1695,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
 
     // 10. Founder Health Crisis
     let morale_low_weeks = state.history.iter().rev().take(4).all(|s| s.morale < 30.0);
-    if morale_low_weeks && rng.gen_bool(0.3) && can_trigger("founder_health_crisis") {
+    if morale_low_weeks && rng.gen_bool(0.3) && can_trigger_event(&state.event_cooldowns, "founder_health_crisis") {
         events.push(GameEvent {
             id: "founder_health_crisis".to_string(),
             week: state.week,
@@ -1057,7 +1750,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     // Automatic Events
 
     // Positive automatic events
-    if rng.gen_bool(0.05) && can_trigger("press_mention") {
+    if rng.gen_bool(0.05) && can_trigger_event(&state.event_cooldowns, "press_mention") {
         events.push(GameEvent {
             id: "press_mention".to_string(),
             week: state.week,
@@ -1085,7 +1778,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("press_mention".to_string(), 4);
     }
 
-    if rng.gen_bool(0.03) && can_trigger("customer_testimonial") {
+    if rng.gen_bool(0.03) && can_trigger_event(&state.event_cooldowns, "customer_testimonial") {
         events.push(GameEvent {
             id: "customer_testimonial".to_string(),
             week: state.week,
@@ -1113,7 +1806,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("customer_testimonial".to_string(), 6);
     }
 
-    if rng.gen_bool(0.02) && can_trigger("competitor_failure") {
+    if rng.gen_bool(0.02) && can_trigger_event(&state.event_cooldowns, "competitor_failure") {
         events.push(GameEvent {
             id: "competitor_failure".to_string(),
             week: state.week,
@@ -1141,7 +1834,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("competitor_failure".to_string(), 8);
     }
 
-    if rng.gen_bool(0.04) && can_trigger("talent_joins") {
+    if rng.gen_bool(0.04) && can_trigger_event(&state.event_cooldowns, "talent_joins") {
         events.push(GameEvent {
             id: "talent_joins".to_string(),
             week: state.week,
@@ -1170,7 +1863,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // Negative automatic events
-    if rng.gen_bool(0.06) && can_trigger("server_outage") {
+    if rng.gen_bool(0.06) && can_trigger_event(&state.event_cooldowns, "server_outage") {
         events.push(GameEvent {
             id: "server_outage".to_string(),
             week: state.week,
@@ -1198,7 +1891,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("server_outage".to_string(), 3);
     }
 
-    if rng.gen_bool(0.04) && can_trigger("customer_complaint") {
+    if rng.gen_bool(0.04) && can_trigger_event(&state.event_cooldowns, "customer_complaint") {
         events.push(GameEvent {
             id: "customer_complaint".to_string(),
             week: state.week,
@@ -1226,7 +1919,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("customer_complaint".to_string(), 5);
     }
 
-    if rng.gen_bool(0.03) && can_trigger("competitor_feature") {
+    if rng.gen_bool(0.03) && can_trigger_event(&state.event_cooldowns, "competitor_feature") {
         events.push(GameEvent {
             id: "competitor_feature".to_string(),
             week: state.week,
@@ -1254,7 +1947,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("competitor_feature".to_string(), 7);
     }
 
-    if rng.gen_bool(0.02) && can_trigger("key_person_sick") {
+    if rng.gen_bool(0.02) && can_trigger_event(&state.event_cooldowns, "key_person_sick") {
         events.push(GameEvent {
             id: "key_person_sick".to_string(),
             week: state.week,
@@ -1283,7 +1976,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
     }
 
     // Neutral automatic events
-    if rng.gen_bool(0.03) && can_trigger("market_shift") {
+    if rng.gen_bool(0.03) && can_trigger_event(&state.event_cooldowns, "market_shift") {
         events.push(GameEvent {
             id: "market_shift".to_string(),
             week: state.week,
@@ -1311,7 +2004,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("market_shift".to_string(), 12);
     }
 
-    if rng.gen_bool(0.02) && can_trigger("new_regulation") {
+    if rng.gen_bool(0.02) && can_trigger_event(&state.event_cooldowns, "new_regulation") {
         events.push(GameEvent {
             id: "new_regulation".to_string(),
             week: state.week,
@@ -1334,7 +2027,7 @@ pub fn check_for_events(state: &mut GameState) -> Vec<GameEvent> {
         state.event_cooldowns.insert("new_regulation".to_string(), 15);
     }
 
-    if rng.gen_bool(0.04) && can_trigger("industry_trend") {
+    if rng.gen_bool(0.04) && can_trigger_event(&state.event_cooldowns, "industry_trend") {
         events.push(GameEvent {
             id: "industry_trend".to_string(),
             week: state.week,

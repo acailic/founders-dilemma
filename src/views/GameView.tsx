@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Container, Title, Text, Button, Stack, Group, Card, Badge, Divider } from '@mantine/core';
-import { invoke } from '@tauri-apps/api/core';
+import { gameInvoke } from '../lib/invoke-wrapper';
 import GameDashboard from '../components/game/GameDashboard';
 import GameOver from '../components/game/GameOver';
 import StartupAnimation from '../components/game/StartupAnimation';
@@ -22,7 +22,7 @@ export default function GameView() {
   const startNewGame = async (difficulty: string) => {
     setLoading(true);
     try {
-      const state = await invoke<GameState>('new_game', { difficulty });
+      const state = await gameInvoke('new_game', { difficulty });
       setGameState(state);
       setGameStatus('playing');
       setSavedGame(state);
@@ -37,7 +37,7 @@ export default function GameView() {
     if (!gameState) return;
 
     try {
-      const status = await invoke<string>('check_game_status', { state: gameState });
+      const status = await gameInvoke('check_game_status', { state: gameState });
       setGameStatus(status);
     } catch (error) {
       console.error('Failed to check game status:', error);

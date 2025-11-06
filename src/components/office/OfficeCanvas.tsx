@@ -9,15 +9,17 @@ import {
   useRef,
   useState,
   useCallback,
+  useMemo,
   type KeyboardEvent,
   type MouseEvent as ReactMouseEvent
 } from 'react';
 import { Card, Stack, Group, Tooltip, ActionIcon, Text, Badge } from '@mantine/core';
 import { OfficeRenderer } from '../../lib/office/renderer';
-import { CameraController, createCamera } from '../../lib/office/camera';
+import { CameraController, createCamera, screenToWorld } from '../../lib/office/camera';
 import { OfficeStateMapper } from '../../lib/office/stateMapper';
-import type { OfficeState } from '../../types/office';
-import { gridToScreenCenter } from '../../lib/office/spatial';
+import type { OfficeState, TeamMember } from '../../types/office';
+import { gridToScreen, gridToScreenCenter, TILE_HEIGHT } from '../../lib/office/spatial';
+import OfficeOverlay from './OfficeOverlay';
 
 interface OfficeCanvasProps {
   gameState: any;  // GameState from Founder's Dilemma
@@ -31,6 +33,7 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
   const cameraControllerRef = useRef<CameraController | null>(null);
   const stateMapperRef = useRef<OfficeStateMapper | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const [officeState, setOfficeState] = useState<OfficeState | null>(null);
   const [fps, setFps] = useState<number>(60);
@@ -39,6 +42,9 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
   // Mouse interaction state
   const [isDragging, setIsDragging] = useState(false);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const [hoveredMemberId, setHoveredMemberId] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
+  const [pointerPosition, setPointerPosition] = useState<{ x: number; y: number } | null>(null);
 
   const focusCameraOnOffice = useCallback((state: OfficeState, animate: boolean = false) => {
     if (!cameraControllerRef.current) return;
@@ -50,6 +56,44 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
 
     const center = gridToScreenCenter(centerGrid, state.grid);
     cameraControllerRef.current.focusOn(center, 1.0, animate ? 600 : undefined);
+  }, []);
+
+  const findMemberAt = useCallback((clientX: number, clientY: number): string | null => {
+    if (!officeState || !canvasRef.current || !cameraControllerRef.current) {
+      return null;
+    }
+
+    const rect = canvasRef.current.getBoundingClientRect();
+    const local = { x: clientX - rect.left, y: clientY - rect.top };
+    const camera = cameraControllerRef.current.getCamera();
+    const world = screenToWorld(local, camera);
+
+    const threshold = 32;
+    let closestId: string | null = null;
+    let closestDist = Number.POSITIVE_INFINITY;
+
+    for (const member of officeState.team) {
+      const memberPoint = gridToScreen(member.position, officeState.grid);
+      const dx = world.x - memberPoint.x;
+      const dy = world.y - (memberPoint.y - TILE_HEIGHT / 4);
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < threshold && dist < closestDist) {
+        closestDist = dist;
+        closestId = member.id;
+      }
+    }
+
+    return closestDist <= threshold ? closestId : null;
+  }, [officeState]);
+
+  const updateHover = useCallback((clientX: number, clientY: number) => {
+    const candidate = findMemberAt(clientX, clientY);
+    setHoveredMemberId(prev => (prev === candidate ? prev : candidate));
+  }, [findMemberAt]);
+
+  const clearHover = useCallback(() => {
+    setHoveredMemberId(prev => (prev !== null ? null : prev));
   }, []);
 
   // Initialize
@@ -106,10 +150,14 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
         cameraControllerRef.current = null;
       }
       if (rendererRef.current) {
+        rendererRef.current.setInteractionState({ hoveredTeamId: null, selectedTeamId: null });
         rendererRef.current.dispose();
         rendererRef.current = null;
       }
       stateMapperRef.current = null;
+      setPointerPosition(null);
+      setHoveredMemberId(null);
+      setSelectedMemberId(null);
     };
   }, [width, height, gameState, focusCameraOnOffice]);
 
@@ -176,25 +224,93 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
     };
   }, [officeState, isPaused]);
 
+  useEffect(() => {
+    if (!rendererRef.current) return;
+    rendererRef.current.setInteractionState({
+      hoveredTeamId: hoveredMemberId,
+      selectedTeamId: selectedMemberId
+    });
+  }, [hoveredMemberId, selectedMemberId]);
+
+  useEffect(() => {
+    if (!officeState) {
+      setHoveredMemberId(null);
+      setSelectedMemberId(null);
+      return;
+    }
+
+    if (hoveredMemberId && !officeState.team.some(member => member.id === hoveredMemberId)) {
+      setHoveredMemberId(null);
+    }
+
+    if (selectedMemberId && !officeState.team.some(member => member.id === selectedMemberId)) {
+      setSelectedMemberId(null);
+    }
+  }, [officeState, hoveredMemberId, selectedMemberId]);
+
   // Mouse handlers
   const handleMouseDown = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
     setIsDragging(true);
     setLastMousePos({ x: e.clientX, y: e.clientY });
+    dragStartRef.current = { x: e.clientX, y: e.clientY };
+
+    if (canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      setPointerPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
   }, []);
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
-    if (!isDragging || !cameraControllerRef.current) return;
+    if (!cameraControllerRef.current || !canvasRef.current) return;
 
     const dx = lastMousePos.x - e.clientX;
     const dy = lastMousePos.y - e.clientY;
 
-    cameraControllerRef.current.pan(dx, dy);
-    setLastMousePos({ x: e.clientX, y: e.clientY });
-  }, [isDragging, lastMousePos]);
+    const rect = canvasRef.current.getBoundingClientRect();
+    const local = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    setPointerPosition(local);
 
-  const handleMouseUp = useCallback(() => {
+    if (isDragging) {
+      cameraControllerRef.current.pan(dx, dy);
+      clearHover();
+    } else {
+      updateHover(e.clientX, e.clientY);
+    }
+
+    setLastMousePos({ x: e.clientX, y: e.clientY });
+  }, [clearHover, isDragging, lastMousePos, updateHover]);
+
+  const handleMouseUp = useCallback((e: ReactMouseEvent<HTMLCanvasElement>) => {
     setIsDragging(false);
-  }, []);
+    const start = dragStartRef.current;
+    dragStartRef.current = null;
+
+    if (canvasRef.current) {
+      const rect = canvasRef.current.getBoundingClientRect();
+      setPointerPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+    }
+
+    if (start) {
+      const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+      if (moved < 6) {
+        updateHover(e.clientX, e.clientY);
+        setSelectedMemberId(prev => {
+          const candidate = findMemberAt(e.clientX, e.clientY);
+          if (!candidate) {
+            return null;
+          }
+          return prev === candidate ? null : candidate;
+        });
+      }
+    }
+  }, [findMemberAt, updateHover]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsDragging(false);
+    dragStartRef.current = null;
+    setPointerPosition(null);
+    clearHover();
+  }, [clearHover]);
 
   // Camera controls
   const handleZoomIn = useCallback(() => {
@@ -210,7 +326,10 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
     if (officeState) {
       focusCameraOnOffice(officeState, true);
     }
-  }, [officeState, focusCameraOnOffice]);
+    setSelectedMemberId(null);
+    setPointerPosition(null);
+    clearHover();
+  }, [clearHover, focusCameraOnOffice, officeState]);
 
   const handleTogglePause = useCallback(() => {
     setIsPaused(prev => !prev);
@@ -232,7 +351,9 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
       const mouseX = event.clientX - rect.left;
       const mouseY = event.clientY - rect.top;
 
+      setPointerPosition({ x: mouseX, y: mouseY });
       cameraControllerRef.current.zoom(zoomFactor, { x: mouseX, y: mouseY });
+      updateHover(event.clientX, event.clientY);
     };
 
     canvas.addEventListener('wheel', handleWheel, { passive: false });
@@ -240,7 +361,7 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
     return () => {
       canvas.removeEventListener('wheel', handleWheel);
     };
-  }, [width, height]);
+  }, [updateHover]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
     if (!cameraControllerRef.current) return;
@@ -283,10 +404,24 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
         event.preventDefault();
         handleResetCamera();
         break;
+      case 'Escape':
+        setSelectedMemberId(null);
+        clearHover();
+        break;
       default:
         break;
     }
-  }, [handleResetCamera, handleTogglePause, handleZoomIn, handleZoomOut]);
+  }, [clearHover, handleResetCamera, handleTogglePause, handleZoomIn, handleZoomOut]);
+
+  const hoveredMember = useMemo<TeamMember | null>(() => {
+    if (!officeState || !hoveredMemberId) return null;
+    return officeState.team.find(member => member.id === hoveredMemberId) ?? null;
+  }, [hoveredMemberId, officeState]);
+
+  const selectedMember = useMemo<TeamMember | null>(() => {
+    if (!officeState || !selectedMemberId) return null;
+    return officeState.team.find(member => member.id === selectedMemberId) ?? null;
+  }, [officeState, selectedMemberId]);
 
   return (
     <Card withBorder padding="md">
@@ -377,7 +512,15 @@ export default function OfficeCanvas({ gameState, width = 800, height = 600 }: O
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
+          />
+
+          <OfficeOverlay
+            hoveredMember={hoveredMember}
+            selectedMember={selectedMember}
+            pointerPosition={pointerPosition}
+            canvasSize={{ width, height }}
+            onClearSelection={() => setSelectedMemberId(null)}
           />
 
           {/* Instructions Overlay */}

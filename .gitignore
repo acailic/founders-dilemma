@@ -117,4 +117,4 @@ bundle-report.html
 *.deb
 *.AppImage
 
-target/
+target/*

@@ -46,6 +46,49 @@ pub struct StartingBonuses {
     pub reputation_bonus: f64,
 }
 
+pub fn action_unlock_key(action: &Action) -> String {
+    match action {
+        Action::RefactorCode { .. } => "RefactorCode".to_string(),
+        Action::ContentLaunch { .. } => "ContentLaunch".to_string(),
+        Action::Coach { .. } => "Coach".to_string(),
+        Action::RunExperiment { .. } => "RunExperiment".to_string(),
+        Action::ComplianceWork { .. } => "ComplianceWork".to_string(),
+        Action::DevRel { .. } => "DevRel".to_string(),
+        Action::PaidAds { .. } => "PaidAds".to_string(),
+        Action::ProcessImprovement => "ProcessImprovement".to_string(),
+        Action::Fire { .. } => "Fire".to_string(),
+        Action::IncidentResponse => "IncidentResponse".to_string(),
+        Action::ShipFeature { .. } => "ShipFeature".to_string(),
+        Action::FounderLedSales { .. } => "FounderLedSales".to_string(),
+        Action::Hire => "Hire".to_string(),
+        Action::Fundraise { .. } => "Fundraise".to_string(),
+        Action::TakeBreak => "TakeBreak".to_string(),
+        // default fallback for other variants
+        other => format!("{:?}", other),
+    }
+}
+
+pub fn action_from_unlock_key(key: &str) -> Option<Action> {
+    match key {
+        "RefactorCode" => Some(Action::RefactorCode { depth: super::actions::RefactorDepth::Surface }),
+        "ContentLaunch" => Some(Action::ContentLaunch { content_type: super::actions::ContentType::BlogPost }),
+        "Coach" => Some(Action::Coach { focus: super::actions::CoachingFocus::Skills }),
+        "RunExperiment" => Some(Action::RunExperiment { category: super::actions::ExperimentType::Pricing }),
+        "ComplianceWork" => Some(Action::ComplianceWork { hours: 8 }),
+        "DevRel" => Some(Action::DevRel { event_type: super::actions::DevRelEvent::Conference }),
+        "PaidAds" => Some(Action::PaidAds { budget: 20_000.0, channel: super::actions::AdChannel::Google }),
+        "ProcessImprovement" => Some(Action::ProcessImprovement),
+        "Fire" => Some(Action::Fire { reason: super::actions::FiringReason::Performance }),
+        "IncidentResponse" => Some(Action::IncidentResponse),
+        "ShipFeature" => Some(Action::ShipFeature { quality: super::actions::Quality::Quick }),
+        "FounderLedSales" => Some(Action::FounderLedSales { call_count: 3 }),
+        "Hire" => Some(Action::Hire),
+        "Fundraise" => Some(Action::Fundraise { target: 250_000.0 }),
+        "TakeBreak" => Some(Action::TakeBreak),
+        _ => None,
+    }
+}
+
 /// Check which actions should be unlocked based on current game state
 pub fn check_unlocks(state: &GameState) -> Vec<Action> {
     let mut unlocked = Vec::new();
@@ -65,7 +108,8 @@ pub fn check_unlocks(state: &GameState) -> Vec<Action> {
     ];
 
     for (action, condition, _desc) in unlockables {
-        if !state.unlocked_actions.contains(&format!("{:?}", action)) {
+        let key = action_unlock_key(&action);
+        if !state.unlocked_actions.contains(&key) {
             let should_unlock = match &condition {
                 UnlockCondition::ReachWeek(week) => state.week >= *week,
                 UnlockCondition::AchieveMetric(metric, value) => match metric.as_str() {
@@ -90,30 +134,81 @@ pub fn check_unlocks(state: &GameState) -> Vec<Action> {
 
 /// Get all available actions for the current state (core + unlocked)
 pub fn get_available_actions(state: &GameState) -> Vec<Action> {
+    use super::actions::{
+        AdChannel,
+        CoachingFocus,
+        ContentType,
+        DevRelEvent,
+        ExperimentType,
+        FiringReason,
+        Quality,
+        RefactorDepth,
+    };
+
     let mut available = vec![
-        Action::ShipFeature { quality: super::actions::Quality::Balanced },
+        Action::ShipFeature { quality: Quality::Quick },
+        Action::ShipFeature { quality: Quality::Balanced },
+        Action::ShipFeature { quality: Quality::Polish },
+        Action::FounderLedSales { call_count: 3 },
         Action::FounderLedSales { call_count: 5 },
         Action::Hire,
+        Action::Fundraise { target: 250_000.0 },
         Action::Fundraise { target: 500_000.0 },
         Action::TakeBreak,
     ];
 
+    let mut push_unique = |action: Action| {
+        if !available.iter().any(|existing| existing == &action) {
+            available.push(action);
+        }
+    };
+
     // Add unlocked actions
     for unlocked_str in &state.unlocked_actions {
-        // Parse back to Action - simplified, in practice might need better parsing
-        // For now, assume we store them as strings and match
         match unlocked_str.as_str() {
-            "RefactorCode" => available.push(Action::RefactorCode { depth: super::actions::RefactorDepth::Surface }),
-            "ContentLaunch" => available.push(Action::ContentLaunch { content_type: super::actions::ContentType::BlogPost }),
-            "Coach" => available.push(Action::Coach { focus: super::actions::CoachingFocus::Skills }),
-            "RunExperiment" => available.push(Action::RunExperiment { category: super::actions::ExperimentType::Pricing }),
-            "ComplianceWork" => available.push(Action::ComplianceWork { hours: 4 }),
-            "DevRel" => available.push(Action::DevRel { event_type: super::actions::DevRelEvent::Conference }),
-            "PaidAds" => available.push(Action::PaidAds { budget: 5000.0, channel: super::actions::AdChannel::Social }),
-            "ProcessImprovement" => available.push(Action::ProcessImprovement),
-            "Fire" => available.push(Action::Fire { reason: super::actions::FiringReason::Performance }),
-            "IncidentResponse" => available.push(Action::IncidentResponse),
-            _ => {}
+            "RefactorCode" => {
+                push_unique(Action::RefactorCode { depth: RefactorDepth::Surface });
+                push_unique(Action::RefactorCode { depth: RefactorDepth::Deep });
+            }
+            "ContentLaunch" => {
+                push_unique(Action::ContentLaunch { content_type: ContentType::BlogPost });
+                push_unique(Action::ContentLaunch { content_type: ContentType::Tutorial });
+            }
+            "Coach" => {
+                push_unique(Action::Coach { focus: CoachingFocus::Skills });
+            }
+            "RunExperiment" => {
+                push_unique(Action::RunExperiment { category: ExperimentType::Pricing });
+            }
+            "ComplianceWork" => {
+                push_unique(Action::ComplianceWork { hours: 8 });
+            }
+            "DevRel" => {
+                push_unique(Action::DevRel { event_type: DevRelEvent::Conference });
+            }
+            "PaidAds" => {
+                push_unique(Action::PaidAds { budget: 20_000.0, channel: AdChannel::Google });
+            }
+            "ProcessImprovement" => {
+                push_unique(Action::ProcessImprovement);
+            }
+            "Fire" => {
+                push_unique(Action::Fire { reason: FiringReason::Performance });
+            }
+            "IncidentResponse" => {
+                push_unique(Action::IncidentResponse);
+            }
+            "Fundraise" => {
+                // Already seeded with 250k/500k, skip
+            }
+            "Hire" | "ShipFeature" | "FounderLedSales" | "TakeBreak" => {
+                // Core actions already added above
+            }
+            other => {
+                if let Some(action) = action_from_unlock_key(other) {
+                    push_unique(action);
+                }
+            }
         }
     }
 
