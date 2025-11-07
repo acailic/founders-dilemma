@@ -6,11 +6,12 @@ import { TauriProvider } from './tauri/TauriProvider';
 import { GameConfigProvider } from './common/GameConfigContext';
 
 export default function ({ children }: PropsWithChildren) {
+	const basename = import.meta.env.BASE_URL.replace(/\/$/, '');
 	return (
 		<TauriProvider>
 			<GameConfigProvider>
 				<Mantine>
-					<BrowserRouter>
+					<BrowserRouter basename={basename}>
 						{children}
 					</BrowserRouter>
 				</Mantine>

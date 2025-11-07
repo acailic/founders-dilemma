@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
   workflow_dispatch:
 
 permissions:
@@ -40,8 +40,8 @@ jobs:
         env:
           VITE_BASE_PATH: /founders-dilemma
 
-      - name: Add SPA fallback
-        run: cp build/index.html build/404.html
+      - name: Add .nojekyll
+        run: touch build/.nojekyll
 
       - name: Configure GitHub Pages branch
         env:

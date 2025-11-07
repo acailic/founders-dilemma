@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script>
+    // Capture the path for SPA redirect
+    const segments = window.location.pathname.split('/').filter(Boolean);
+    const repoName = segments[0];
+    const repoBase = `/${repoName}/`;
+    const path = segments.slice(1).join('/');
+    sessionStorage.setItem('pathToRestore', path);
+    sessionStorage.setItem('pathSearch', window.location.search);
+    sessionStorage.setItem('pathHash', window.location.hash);
+    window.location.replace(window.location.origin + repoBase);
+  </script>
+</head>
+<body>
+</body>
+</html>
