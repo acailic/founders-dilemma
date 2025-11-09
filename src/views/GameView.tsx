@@ -146,10 +146,18 @@ export default function GameView() {
                 withBorder
                 padding="lg"
                 onClick={() => setSelectedDifficulty('indie')}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedDifficulty('indie')}
+                tabIndex={0}
+                role="button"
+                aria-label="Select Indie Bootstrap difficulty"
+                aria-pressed={selectedDifficulty === 'indie'}
                 style={{
                   cursor: 'pointer',
                   backgroundColor: selectedDifficulty === 'indie' ? 'var(--fd-positive-surface)' : undefined,
+                  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 <Stack gap="md">
                   <Text fw={700} size="lg">🏠 Indie Bootstrap</Text>
@@ -168,10 +176,18 @@ export default function GameView() {
                 withBorder
                 padding="lg"
                 onClick={() => setSelectedDifficulty('vc')}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedDifficulty('vc')}
+                tabIndex={0}
+                role="button"
+                aria-label="Select VC Track difficulty"
+                aria-pressed={selectedDifficulty === 'vc'}
                 style={{
                   cursor: 'pointer',
                   backgroundColor: selectedDifficulty === 'vc' ? 'var(--fd-positive-surface)' : undefined,
+                  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 <Stack gap="md">
                   <Text fw={700} size="lg">🚀 VC Track</Text>
@@ -192,10 +208,18 @@ export default function GameView() {
                 withBorder
                 padding="lg"
                 onClick={() => setSelectedDifficulty('regulated')}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedDifficulty('regulated')}
+                tabIndex={0}
+                role="button"
+                aria-label="Select Regulated Fintech difficulty"
+                aria-pressed={selectedDifficulty === 'regulated'}
                 style={{
                   cursor: 'pointer',
                   backgroundColor: selectedDifficulty === 'regulated' ? 'var(--fd-positive-surface)' : undefined,
+                  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 <Stack gap="md">
                   <Text fw={700} size="lg">🏦 Regulated Fintech</Text>
@@ -214,10 +238,18 @@ export default function GameView() {
                 withBorder
                 padding="lg"
                 onClick={() => setSelectedDifficulty('infra')}
+                onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && setSelectedDifficulty('infra')}
+                tabIndex={0}
+                role="button"
+                aria-label="Select Infrastructure/DevTool difficulty"
+                aria-pressed={selectedDifficulty === 'infra'}
                 style={{
                   cursor: 'pointer',
                   backgroundColor: selectedDifficulty === 'infra' ? 'var(--fd-positive-surface)' : undefined,
+                  transition: 'transform 0.1s ease, box-shadow 0.1s ease',
                 }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
               >
                 <Stack gap="md">
                   <Text fw={700} size="lg">⚙️ Infrastructure/DevTool</Text>

@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Founder's Dilemma",
+  "name": "Founder's Dilemma - Startup Simulation Game",
+  "description": "Educational startup simulation game teaching real founder principles",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +21,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#1a1b1e",
+  "background_color": "#1a1b1e",
+  "orientation": "any"
 }
