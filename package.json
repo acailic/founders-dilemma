@@ -58,7 +58,7 @@
     "build:web": "cross-env VITE_BASE_PATH=/founders-dilemma vite build",
     "preview": "vite preview",
     "serve": "vite preview",
-    "preinstall": "pnpm add -g add sloc @tauri-apps/cli",
+    "preinstall": "echo 'Skipping global package installation'",
     "sloc": "sloc src src-tauri/src",
     "upgrade": "concurrently \"pnpm up\" \"cd src-tauri && cargo update && cargo clean\"",
     "test": "mocha"
