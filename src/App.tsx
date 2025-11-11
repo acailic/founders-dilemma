@@ -31,6 +31,8 @@ import { LuRocket, LuSettings2, LuLightbulb, LuFlaskConical, LuFeather, LuInfo }
 import AppIconGraphic from './components/AppIcon';
 import { useGameConfig } from './common/GameConfigContext';
 import { THEME_PRESETS } from './common/themePresets';
+import { GitHubPagesStatus } from './components/GitHubPagesStatus';
+import { isTauri as checkIsTauri } from './lib/invoke-wrapper';
 // if some views are large, you can use lazy loading to reduce the initial app load time
 const LazyView = lazy(() => import('./views/LazyView'));
 
@@ -247,6 +249,14 @@ interface View {
 						<Group gap={4} align='center' className={classes.languageSwitcher}>
 							<LanguageHeaders />
 						</Group>
+						{!checkIsTauri() && (
+							<GitHubPagesStatus
+								url="https://acailic.github.io/founders-dilemma/"
+								autoRefresh={true}
+								refreshInterval={120000}
+								compact={true}
+							/>
+						)}
 						<Tooltip label={tipsVisible ? 'Hide quick tips' : 'Show quick tips'} position='bottom' withArrow>
 						<ActionIcon
 							variant='filled'
