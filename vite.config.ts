@@ -44,5 +44,18 @@ export default defineConfig({
     assetsDir: 'assets',
     // Generate manifest for proper asset loading
     manifest: true,
+    // Optimize chunk size and split vendor code
+    chunkSizeWarningLimit: 1000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Split large vendor libraries into separate chunks
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-mantine': ['@mantine/core', '@mantine/hooks', '@mantine/modals', '@mantine/notifications'],
+          'vendor-tauri': ['@tauri-apps/api'],
+          'vendor-icons': ['react-icons', '@tabler/icons-react'],
+        }
+      }
+    }
   }
 })
