@@ -78,10 +78,10 @@ jobs:
         run: pnpm install
 
       - name: TypeScript type check
-        run: pnpm tsc --noEmit
+        run: pnpm type-check
 
       - name: Run ESLint
-        run: pnpm eslint src --ext ts,tsx
+        run: pnpm eslint 'src/**/*.{ts,tsx}'
 
       - name: Build frontend
         run: pnpm build
