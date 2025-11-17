@@ -2,6 +2,15 @@
 
 ![Founder's Dilemma](./intro.png)
 
+[![CI](https://github.com/acailic/founders-dilemma/actions/workflows/ci.yml/badge.svg)](https://github.com/acailic/founders-dilemma/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Version](https://img.shields.io/badge/version-0.2.5-blue.svg)](https://github.com/acailic/founders-dilemma/releases)
+[![Tauri](https://img.shields.io/badge/Tauri-2.0-FFC131?logo=tauri)](https://tauri.app/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
+[![Rust](https://img.shields.io/badge/Rust-1.75+-orange?logo=rust)](https://www.rust-lang.org/)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![Code of Conduct](https://img.shields.io/badge/code%20of%20conduct-contributor%20covenant-purple.svg)](CODE_OF_CONDUCT.md)
+
 **An educational startup simulation game that teaches real founder principles through gameplay.**
 
 Navigate compounding constraints, make strategic decisions, and learn from your choices as you work toward sustainable product-market fit. The game rewards real-world best practices while teaching you the hard lessons of startup building through interactive dilemmas and educational feedback.
@@ -9,6 +18,7 @@ Navigate compounding constraints, make strategic decisions, and learn from your 
 ## 🎮 Game Overview
 
 Play as a startup founder managing:
+
 - **Financial**: Bank, burn rate, MRR, runway
 - **Growth**: Users, growth rate, churn, NPS
 - **Health**: Morale, reputation, momentum
@@ -30,6 +40,7 @@ Every decision provides teaching moments based on real founder experiences.
 ### Win Condition: Escape Velocity
 
 Sustain **all 4 conditions** for **12 consecutive weeks**:
+
 1. Revenue ≥ Burn (profitability)
 2. WAU Growth ≥ 10% (sustained growth)
 3. NPS ≥ 30 (customer love)
@@ -84,11 +95,13 @@ The web version automatically detects when it is running in a browser and uses t
 **GitHub Pages Deployment Pipeline**
 
 The `.github/workflows/deploy.yml` workflow now handles publishing:
+
 1. Every push to `main` (or a manual workflow dispatch) installs dependencies with pnpm, runs `pnpm run build:web`, and adds a SPA-friendly `404.html`.
 2. The workflow enforces the `gh-pages` branch as the Pages source via the GitHub REST API.
 3. Built assets are force-pushed to `gh-pages` with `peaceiris/actions-gh-pages`, and are immediately served at `https://[username].github.io/founders-dilemma/`.
 
 **How to verify a deployment**
+
 - Push to `main` and wait for the **Deploy to GitHub Pages** workflow to finish.
 - Confirm the workflow log shows “Deploy to gh-pages” succeeded and that the `gh-pages` branch was updated.
 - Visit `https://[username].github.io/founders-dilemma/` (or `curl -I` the URL) to ensure the HTML references `/founders-dilemma/assets/...`.
@@ -98,24 +111,28 @@ Because the workflow configures the Pages source automatically, no manual upload
 ## 🎯 Difficulty Modes
 
 **Indie Bootstrap**
+
 - Starting Bank: $50k
 - Monthly Burn: $8k
 - Runway: 6.25 months
 - Challenge: Low resources, slower growth
 
 **VC Track**
+
 - Starting Bank: $1M
 - Monthly Burn: $80k
 - Runway: 12.5 months
 - Challenge: High burn, aggressive growth targets
 
 **Regulated Fintech**
+
 - Starting Bank: $500k
 - Monthly Burn: $40k
 - Runway: 12.5 months
 - Challenge: High compliance burden
 
 **Infrastructure/DevTool**
+
 - Starting Bank: $300k
 - Monthly Burn: $25k
 - Runway: 12 months
@@ -124,39 +141,46 @@ Because the workflow configures the Pages source automatically, no manual upload
 ## 📋 Available Actions
 
 ### Product (1 focus each)
-- **Ship Feature (Quick)**: +WAU, +tech debt, +momentum *(Core)*
-- **Ship Feature (Balanced)**: Moderate gains, balanced *(Core)*
-- **Ship Feature (Polish)**: +reputation, -tech debt, slower *(Core)*
-- **Refactor Code (Surface)**: -10-15 tech debt, +0.05 velocity *(Unlocks Week 5)*
-- **Refactor Code (Deep)**: -25-35 tech debt, +0.15 velocity, -10% WAU *(Unlocks Week 5)*
-- **Run Experiment**: Probabilistic insights, +5-15% metric boost *(Unlocks Week 9)*
+
+- **Ship Feature (Quick)**: +WAU, +tech debt, +momentum _(Core)_
+- **Ship Feature (Balanced)**: Moderate gains, balanced _(Core)_
+- **Ship Feature (Polish)**: +reputation, -tech debt, slower _(Core)_
+- **Refactor Code (Surface)**: -10-15 tech debt, +0.05 velocity _(Unlocks Week 5)_
+- **Refactor Code (Deep)**: -25-35 tech debt, +0.15 velocity, -10% WAU _(Unlocks Week 5)_
+- **Run Experiment**: Probabilistic insights, +5-15% metric boost _(Unlocks Week 9)_
 
 ### Sales & Growth (1-2 focus)
-- **Founder-Led Sales (3 calls)**: Probabilistic MRR gain *(Core)*
-- **Founder-Led Sales (5 calls)**: Higher MRR potential, more morale cost *(Core)*
-- **Content Launch (Blog)**: +3-8% WAU, +5 reputation *(Unlocks Week 5)*
-- **Content Launch (Tutorial)**: +5-12% WAU, +8 reputation, +5 NPS *(Unlocks Week 5)*
-- **DevRel**: +15-25% WAU, +15 reputation, +10 morale, -$5k *(Unlocks Week 13)*
-- **Paid Ads**: +10-30% WAU, -$10k-30k, effectiveness varies *(Unlocks Week 13)*
+
+- **Founder-Led Sales (3 calls)**: Probabilistic MRR gain _(Core)_
+- **Founder-Led Sales (5 calls)**: Higher MRR potential, more morale cost _(Core)_
+- **Content Launch (Blog)**: +3-8% WAU, +5 reputation _(Unlocks Week 5)_
+- **Content Launch (Tutorial)**: +5-12% WAU, +8 reputation, +5 NPS _(Unlocks Week 5)_
+- **DevRel**: +15-25% WAU, +15 reputation, +10 morale, -$5k _(Unlocks Week 13)_
+- **Paid Ads**: +10-30% WAU, -$10k-30k, effectiveness varies _(Unlocks Week 13)_
 
 ### Team (1-2 focus)
-- **Hire**: +$10k burn, +velocity, +morale *(Core)*
-- **Coach**: +10 morale, +0.1 velocity, +5 reputation *(Unlocks Week 5)*
-- **Fire**: -$10k burn, -15 morale, -0.1 velocity *(Unlocks Week 21)*
+
+- **Hire**: +$10k burn, +velocity, +morale _(Core)_
+- **Coach**: +10 morale, +0.1 velocity, +5 reputation _(Unlocks Week 5)_
+- **Fire**: -$10k burn, -15 morale, -0.1 velocity _(Unlocks Week 21)_
 
 ### Capital (2 focus)
-- **Fundraise ($250k)**: Attempt to raise capital *(Core)*
-- **Fundraise ($500k)**: Larger raise, harder to close *(Core)*
+
+- **Fundraise ($250k)**: Attempt to raise capital _(Core)_
+- **Fundraise ($500k)**: Larger raise, harder to close _(Core)_
 
 ### Operations (1-2 focus)
-- **Compliance Work**: -15-25 compliance risk, -5 morale *(Unlocks Week 9)*
-- **Incident Response**: Reduces reputation damage, high morale cost *(Unlocks Week 21)*
-- **Process Improvement**: +velocity, reduces future incidents *(Unlocks Week 13)*
+
+- **Compliance Work**: -15-25 compliance risk, -5 morale _(Unlocks Week 9)_
+- **Incident Response**: Reduces reputation damage, high morale cost _(Unlocks Week 21)_
+- **Process Improvement**: +velocity, reduces future incidents _(Unlocks Week 13)_
 
 ### Recovery (1 focus)
-- **Take a Break**: +morale, -growth momentum *(Core)*
+
+- **Take a Break**: +morale, -growth momentum _(Core)_
 
 **Action Synergy Examples:**
+
 - **Launch Momentum**: Ship Feature + Content Launch → +15% WAU boost
 - **Engineering Excellence**: Refactor Code + Coach → +0.2 velocity
 - **Integrated Marketing**: Paid Ads + Content Launch → 50% more effective
@@ -164,26 +188,34 @@ Because the workflow configures the Pages source automatically, no manual upload
 ## 🎯 Strategic Systems
 
 ### Action Synergies
+
 Combine complementary actions in the same turn for bonus effects:
+
 - **Launch Momentum**: Ship Feature + Content Launch → +15% WAU boost
 - **Engineering Excellence**: Refactor + Coach → +0.2 velocity
 - **Integrated Marketing**: Paid Ads + Content → 50% more effective
 
 ### Market Conditions
+
 External forces that modify gameplay:
+
 - **Bull Market**: Easier fundraising, higher growth, expensive hiring
 - **Recession**: Harder fundraising, lower growth, cheaper talent
 - **Tech Boom**: Expensive hiring, high velocity, strong fundraising
 
 ### Specialization Paths
+
 Focus your strategy to earn powerful bonuses:
+
 - **Product Excellence**: 60%+ product actions → +0.3 velocity
 - **Growth Hacking**: 60%+ growth actions → +5% WAU growth
 - **Operational Efficiency**: 60%+ ops actions → -20% burn
 - **Customer Obsessed**: 60%+ customer actions → +15 NPS
 
 ### Progression
+
 Unlock advanced actions as you progress:
+
 - Week 0-4: Core 5 actions (tutorial phase)
 - Week 5-8: Unlock Refactor, Content, Coach
 - Week 9-12: Unlock Experiments, Compliance
@@ -192,12 +224,14 @@ Unlock advanced actions as you progress:
 ## 🎨 Tech Stack
 
 **Backend (Rust)**
+
 - Game engine with pure state machine
 - Tauri for desktop integration
 - Serde for serialization
 - Chrono for timestamps
 
 **Frontend (React + TypeScript)**
+
 - Mantine UI components
 - React Router for navigation
 - Tauri API for Rust communication
@@ -254,17 +288,20 @@ pnpm test
 ## 🎓 Game Design Philosophy
 
 **Ruthless Simplicity**
+
 - Clear mechanics with transparent effects
 - No hidden complexity
 - Every action has trade-offs
 
 **Compounding Consequences**
+
 - Early decisions affect late game
 - Tech debt slows velocity
 - Low morale reduces productivity
 - High churn erodes MRR
 
 **Multiple Viable Strategies**
+
 - Bootstrap slowly
 - Raise capital and burn fast
 - Balance growth and stability
@@ -273,6 +310,7 @@ pnpm test
 ## 📊 Implementation Status
 
 **Core Systems:**
+
 - ✅ Rust game engine with state management
 - ✅ React UI with Mantine components
 - ✅ Tab-based navigation (Dashboard, Plan Week, History, Achievements)
@@ -281,18 +319,21 @@ pnpm test
 - ✅ Escape velocity win condition
 
 **Educational Systems:**
+
 - ✅ Weekly Insights - Educational feedback after each turn
 - ✅ Compounding Effects - Rewards for sustained good practices
 - ✅ Failure Warnings - Early warning system for dangerous patterns
 - ✅ Strategic Dilemmas - Event system with meaningful choices
 
 **Strategic Systems:**
+
 - ✅ Action Synergies - Bonus effects for complementary actions
 - ✅ Market Conditions - Dynamic external modifiers
 - ✅ Specialization Paths - Strategic focus bonuses
 - ✅ Progression System - Unlockable actions and milestones
 
 **UI/UX:**
+
 - ✅ Enhanced theme with professional polish
 - ✅ Historical charts and week-by-week timeline
 - ✅ Metrics sidebar with contextual information
@@ -304,6 +345,7 @@ pnpm test
 ## 🤝 Contributing
 
 This is a learning project. Feel free to:
+
 - Play and provide feedback
 - Suggest balance changes
 - Report bugs
@@ -316,6 +358,7 @@ MIT
 ## 🎯 Future Enhancements
 
 **Potential Additions:**
+
 - [ ] Advanced metrics and analytics dashboard
 - [ ] Tutorial/onboarding flow
 - [ ] Sound effects and music
@@ -328,6 +371,7 @@ MIT
 - [ ] Community synergy/event creation tools
 
 **Community Ideas:**
+
 - Submit new action synergy combinations
 - Propose market conditions based on real startup experiences
 - Suggest strategic dilemmas from your founder journey

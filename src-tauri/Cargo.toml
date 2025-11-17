@@ -1,10 +1,10 @@
 [package]
-name = "app"
-version = "0.0.0"
-description = "A Tauri App"
-authors = ["you"]
-license = ""
-repository = ""
+name = "founders-dilemma"
+version = "0.2.5"
+description = "An educational startup simulation game that teaches real founder principles through gameplay"
+authors = ["Founder's Dilemma Contributors"]
+license = "MIT"
+repository = "https://github.com/acailic/founders-dilemma"
 edition = "2021"
 
 [build-dependencies]

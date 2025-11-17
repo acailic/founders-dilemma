@@ -59,40 +59,41 @@ GameState → OfficeState Mapper → Renderer → Canvas
 
 ```typescript
 interface OfficeGrid {
-  width: number;        // 10 tiles
-  height: number;       // 8 tiles
-  tileSize: number;     // 64px
-  perspective: 'isometric' | 'top-down';
+  width: number; // 10 tiles
+  height: number; // 8 tiles
+  tileSize: number; // 64px
+  perspective: "isometric" | "top-down";
 }
 
 interface Tile {
-  x: number;            // Grid X (0-9)
-  y: number;            // Grid Y (0-7)
-  type: TileType;       // Floor, Desk, Meeting, Kitchen, etc.
+  x: number; // Grid X (0-9)
+  y: number; // Grid Y (0-7)
+  type: TileType; // Floor, Desk, Meeting, Kitchen, etc.
   occupied: boolean;
-  entity?: Entity;      // What's on this tile
+  entity?: Entity; // What's on this tile
 }
 
 enum TileType {
-  Floor = 'floor',
-  Desk = 'desk',
-  MeetingTable = 'meeting',
-  Kitchen = 'kitchen',
-  Reception = 'reception',
-  ServerRack = 'server',
-  Whiteboard = 'whiteboard',
-  Plants = 'plants',
-  Empty = 'empty'
+  Floor = "floor",
+  Desk = "desk",
+  MeetingTable = "meeting",
+  Kitchen = "kitchen",
+  Reception = "reception",
+  ServerRack = "server",
+  Whiteboard = "whiteboard",
+  Plants = "plants",
+  Empty = "empty",
 }
 ```
 
 **Coordinate Conversion**:
+
 ```typescript
 // Grid to screen (isometric projection)
 function gridToScreen(x: number, y: number): Point {
   return {
     x: (x - y) * (TILE_WIDTH / 2),
-    y: (x + y) * (TILE_HEIGHT / 2)
+    y: (x + y) * (TILE_HEIGHT / 2),
   };
 }
 
@@ -107,18 +108,19 @@ function screenToGrid(screenX: number, screenY: number): Point {
 ### 2. Character System
 
 **Team Member Model**:
+
 ```typescript
 interface TeamMember {
-  id: string;           // Persistent ID
-  name: string;         // Generated name
-  role: Role;           // Engineer, Sales, Designer, Ops, Founder
-  joinedWeek: number;   // When hired
+  id: string; // Persistent ID
+  name: string; // Generated name
+  role: Role; // Engineer, Sales, Designer, Ops, Founder
+  joinedWeek: number; // When hired
   seniority: Seniority; // Junior, Mid, Senior
 
   // Visual state
   position: GridPosition;
   currentAction: Action;
-  mood: Mood;           // Happy, Neutral, Stressed, Burnt
+  mood: Mood; // Happy, Neutral, Stressed, Burnt
 
   // Animation state
   animationState: AnimationState;
@@ -130,31 +132,31 @@ interface TeamMember {
 }
 
 enum Role {
-  Founder = 'founder',
-  Engineer = 'engineer',
-  Sales = 'sales',
-  Designer = 'designer',
-  Marketing = 'marketing',
-  Operations = 'ops'
+  Founder = "founder",
+  Engineer = "engineer",
+  Sales = "sales",
+  Designer = "designer",
+  Marketing = "marketing",
+  Operations = "ops",
 }
 
 enum Mood {
-  Thriving = 'thriving',    // >80 morale
-  Happy = 'happy',          // 60-80
-  Neutral = 'neutral',      // 40-60
-  Stressed = 'stressed',    // 20-40
-  Exhausted = 'exhausted'   // <20
+  Thriving = "thriving", // >80 morale
+  Happy = "happy", // 60-80
+  Neutral = "neutral", // 40-60
+  Stressed = "stressed", // 20-40
+  Exhausted = "exhausted", // <20
 }
 
 enum Action {
-  Coding = 'coding',
-  Meeting = 'meeting',
-  Calling = 'calling',
-  Designing = 'designing',
-  Writing = 'writing',
-  Break = 'break',
-  Idle = 'idle',
-  Celebrating = 'celebrating'
+  Coding = "coding",
+  Meeting = "meeting",
+  Calling = "calling",
+  Designing = "designing",
+  Writing = "writing",
+  Break = "break",
+  Idle = "idle",
+  Celebrating = "celebrating",
 }
 ```
 
@@ -187,7 +189,7 @@ interface Animation {
   id: string;
   type: AnimationType;
   target: Entity;
-  duration: number;     // ms
+  duration: number; // ms
   startTime: number;
   easing: EasingFunction;
   onComplete?: () => void;
@@ -195,32 +197,33 @@ interface Animation {
 
 enum AnimationType {
   // Character animations
-  Walk = 'walk',
-  Type = 'type',
-  Talk = 'talk',
-  Gesture = 'gesture',
-  Celebrate = 'celebrate',
-  Slump = 'slump',
+  Walk = "walk",
+  Type = "type",
+  Talk = "talk",
+  Gesture = "gesture",
+  Celebrate = "celebrate",
+  Slump = "slump",
 
   // Environment animations
-  ClutterAccumulate = 'clutter_accumulate',
-  ClutterClear = 'clutter_clear',
-  PlantGrow = 'plant_grow',
-  PlantWilt = 'plant_wilt',
+  ClutterAccumulate = "clutter_accumulate",
+  ClutterClear = "clutter_clear",
+  PlantGrow = "plant_grow",
+  PlantWilt = "plant_wilt",
 
   // Camera animations
-  ZoomIn = 'zoom_in',
-  ZoomOut = 'zoom_out',
-  Pan = 'pan',
+  ZoomIn = "zoom_in",
+  ZoomOut = "zoom_out",
+  Pan = "pan",
 
   // UI animations
-  FadeIn = 'fade_in',
-  FadeOut = 'fade_out',
-  Pulse = 'pulse'
+  FadeIn = "fade_in",
+  FadeOut = "fade_out",
+  Pulse = "pulse",
 }
 ```
 
 **Animation Manager**:
+
 ```typescript
 class AnimationManager {
   private activeAnimations: Map<string, Animation>;
@@ -248,74 +251,76 @@ class AnimationManager {
 ### 4. Environment System
 
 **Office Areas**:
+
 ```typescript
 interface OfficeArea {
   type: AreaType;
   tiles: GridPosition[];
-  capacity: number;      // Max people
+  capacity: number; // Max people
   furniture: Furniture[];
   clutter: ClutterItem[];
 }
 
 enum AreaType {
-  WorkArea = 'work',           // Desks
-  MeetingArea = 'meeting',     // Tables, chairs
-  Kitchen = 'kitchen',         // Coffee, fridge
-  Reception = 'reception',     // Entrance
-  ServerRoom = 'server',       // Tech infra
-  Lounge = 'lounge'           // Break area
+  WorkArea = "work", // Desks
+  MeetingArea = "meeting", // Tables, chairs
+  Kitchen = "kitchen", // Coffee, fridge
+  Reception = "reception", // Entrance
+  ServerRoom = "server", // Tech infra
+  Lounge = "lounge", // Break area
 }
 
 interface Furniture {
   type: FurnitureType;
   position: GridPosition;
-  quality: Quality;      // Affects visuals
+  quality: Quality; // Affects visuals
   occupied: boolean;
 }
 
 enum FurnitureType {
-  Desk = 'desk',
-  Chair = 'chair',
-  Computer = 'computer',
-  Monitor = 'monitor',
-  Whiteboard = 'whiteboard',
-  MeetingTable = 'meeting_table',
-  CoffeeTable = 'coffee_table',
-  Plant = 'plant',
-  BookShelf = 'bookshelf',
-  ServerRack = 'server_rack'
+  Desk = "desk",
+  Chair = "chair",
+  Computer = "computer",
+  Monitor = "monitor",
+  Whiteboard = "whiteboard",
+  MeetingTable = "meeting_table",
+  CoffeeTable = "coffee_table",
+  Plant = "plant",
+  BookShelf = "bookshelf",
+  ServerRack = "server_rack",
 }
 ```
 
 **Clutter System** (Tech Debt Visualization):
+
 ```typescript
 interface ClutterItem {
   type: ClutterType;
   position: GridPosition;
-  intensity: number;     // 0-100
-  age: number;          // Weeks since appeared
+  intensity: number; // 0-100
+  age: number; // Weeks since appeared
 }
 
 enum ClutterType {
-  Papers = 'papers',
-  Cables = 'cables',
-  Boxes = 'boxes',
-  PizzaBoxes = 'pizza',
-  CoffeeCups = 'coffee',
-  PostIts = 'postits',
-  Equipment = 'equipment'
+  Papers = "papers",
+  Cables = "cables",
+  Boxes = "boxes",
+  PizzaBoxes = "pizza",
+  CoffeeCups = "coffee",
+  PostIts = "postits",
+  Equipment = "equipment",
 }
 
 function calculateClutterDistribution(techDebt: number): ClutterItem[] {
   const count = Math.floor(techDebt / 10); // 10 items per 10% tech debt
 
   return generateClutterItems(count, {
-    papers: 0.3,      // 30% papers
-    cables: 0.2,      // 20% cables
-    boxes: 0.15,      // 15% boxes
-    pizza: 0.15,      // 15% pizza boxes (high burn/crunch)
-    coffee: 0.1,      // 10% coffee cups
-    postits: 0.1      // 10% post-its
+    papers: 0.3, // 30% papers
+    cables: 0.2, // 20% cables
+    boxes: 0.15, // 15% boxes
+    pizza: 0.15, // 15% pizza boxes (high burn/crunch)
+    coffee: 0.1, // 10% coffee cups
+    postits: 0.1, // 10% post-its
   });
 }
 ```
@@ -323,6 +328,7 @@ function calculateClutterDistribution(techDebt: number): ClutterItem[] {
 ### 5. Rendering Engine
 
 **Render Layers** (bottom to top):
+
 1. Floor layer (tiles, carpet)
 2. Furniture layer (desks, chairs)
 3. Clutter layer (papers, boxes)
@@ -343,12 +349,12 @@ class OfficeRenderer {
     this.clear();
 
     // Render each layer in order
-    this.renderLayer('floor', state);
-    this.renderLayer('furniture', state);
-    this.renderLayer('clutter', state);
-    this.renderLayer('characters', state);
-    this.renderLayer('effects', state);
-    this.renderLayer('ui', state);
+    this.renderLayer("floor", state);
+    this.renderLayer("furniture", state);
+    this.renderLayer("clutter", state);
+    this.renderLayer("characters", state);
+    this.renderLayer("effects", state);
+    this.renderLayer("ui", state);
   }
 
   private renderLayer(type: LayerType, state: OfficeState): void {
@@ -360,7 +366,7 @@ class OfficeRenderer {
     this.applyCamera();
 
     // Render entities in layer
-    layer.entities.forEach(entity => {
+    layer.entities.forEach((entity) => {
       this.renderEntity(entity, state);
     });
 
@@ -370,12 +376,13 @@ class OfficeRenderer {
 ```
 
 **Camera System**:
+
 ```typescript
 interface Camera {
-  position: Point;      // Center point
-  zoom: number;         // 0.5 - 2.0
-  rotation: number;     // 0-360 (for future 3D)
-  bounds: Rectangle;    // Viewport bounds
+  position: Point; // Center point
+  zoom: number; // 0.5 - 2.0
+  rotation: number; // 0-360 (for future 3D)
+  bounds: Rectangle; // Viewport bounds
 }
 
 class CameraController {
@@ -400,16 +407,19 @@ class CameraController {
 ### 6. Game State Integration
 
 **State Mapper**:
+
 ```typescript
 class OfficeStateMapper {
-  constructor(rngFactory?: (seed: string) => RandomFn) { /* default uses mulberry32 */ }
+  constructor(rngFactory?: (seed: string) => RandomFn) {
+    /* default uses mulberry32 */
+  }
 
   mapToOfficeState(gameState: GameState): OfficeState {
     const baseSeed = `${gameState.game_id}-${gameState.week}`;
     const teamSize = estimateTeamSizeFromBurn(gameState.burn); // 1-12 clamp
     const layout = this.getLayoutForTeamSize(teamSize);
 
-    const tiles = this.generateTiles(layout);            // TODO: memoize per layout
+    const tiles = this.generateTiles(layout); // TODO: memoize per layout
     const furniture = this.generateFurniture(layout, teamSize, gameState); // TODO: memoize
 
     const deskPositions = furniture
@@ -442,7 +452,7 @@ class OfficeStateMapper {
       areas: this.getAreas(layout, furniture, team),
       ambiance,
       week: gameState.week,
-      lastUpdate: Date.now()
+      lastUpdate: Date.now(),
     };
   }
 }
@@ -453,6 +463,7 @@ class OfficeStateMapper {
 The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, camera controls). The remaining items below are retained as backlog tasks for future iterations.
 
 ### Day 1: Core Architecture + Spatial System
+
 - [x] Create component structure
 - [x] Implement isometric grid system
 - [x] Build coordinate conversion
@@ -460,6 +471,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 - [x] Test spatial positioning
 
 ### Day 2: Character System
+
 - [ ] Design character sprites (SVG)
 - [ ] Implement TeamMember model
 - [ ] Build character persistence
@@ -467,6 +479,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 - [ ] Add mood system
 
 ### Day 3: Animation Engine
+
 - [ ] Build AnimationManager
 - [ ] Implement character animations
   - Walking
@@ -477,6 +490,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 - [ ] Test animation queue
 
 ### Day 4: Environment System
+
 - [ ] Create furniture catalog
 - [ ] Implement clutter system
 - [ ] Build layout generator
@@ -484,6 +498,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 - [ ] Test layout scaling
 
 ### Day 5: Advanced Rendering
+
 - [ ] Implement layer system
 - [ ] Add camera controls
 - [ ] Build interaction system
@@ -491,6 +506,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 - [ ] Performance optimization
 
 ### Day 6: Integration + Polish
+
 - [ ] Integrate with GameState
 - [ ] Add Office tab to dashboard
 - [ ] Implement time-lapse mode
@@ -498,6 +514,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 - [ ] Sound effects
 
 ### Day 7: Testing + Documentation
+
 - [ ] Comprehensive testing
 - [ ] Performance profiling
 - [ ] Bug fixes
@@ -511,11 +528,13 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 **Decision**: **HTML5 Canvas with SVG sprites**
 
 **Rationale**:
+
 - Canvas: Best performance for 60fps animations
 - SVG sprites: Scalable, easy to style
 - Hybrid approach: Render SVG to canvas
 
 **Alternative considered**:
+
 - Pure SVG: Too slow for complex animations
 - WebGL: Overkill for 2D isometric
 - React Three Fiber: Wrong abstraction level
@@ -525,11 +544,13 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 **Decision**: **Custom frame-based animation system**
 
 **Rationale**:
+
 - Full control over timing
 - Lightweight (no heavy libraries)
 - Game-specific optimizations
 
 **Libraries considered**:
+
 - GSAP: Too heavy, generic
 - Framer Motion: React-focused, not canvas
 - Three.js: 3D focused
@@ -539,6 +560,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 **Decision**: **Local component state + React Context**
 
 **Rationale**:
+
 - Office state derived from GameState
 - No need for Redux/Zustand
 - Simple, performant
@@ -605,6 +627,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 ## Future Enhancements (Post-MVP)
 
 ### Phase 2 (After initial release)
+
 - [ ] Individual character personalities
 - [ ] Character skill levels visualization
 - [ ] Office customization (themes)
@@ -612,6 +635,7 @@ The MVP currently ships the Day 1 deliverables (core renderer, seeded mapper, ca
 - [ ] Weather effects (visible through windows)
 
 ### Phase 3 (Long-term)
+
 - [ ] 3D perspective toggle
 - [ ] VR mode exploration
 - [ ] Character dialogue bubbles

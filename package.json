@@ -1,8 +1,27 @@
 {
-  "name": "r2-t2",
+  "name": "founders-dilemma",
   "version": "0.2.5",
+  "description": "An educational startup simulation game that teaches real founder principles through gameplay",
   "type": "module",
-  "private": true,
+  "private": false,
+  "license": "MIT",
+  "author": "Founder's Dilemma Contributors",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acailic/founders-dilemma.git"
+  },
+  "homepage": "https://acailic.github.io/founders-dilemma/",
+  "bugs": {
+    "url": "https://github.com/acailic/founders-dilemma/issues"
+  },
+  "keywords": [
+    "game",
+    "startup",
+    "simulation",
+    "educational",
+    "tauri",
+    "react"
+  ],
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@fontsource/open-sans": "^5.2.7",
@@ -61,7 +80,19 @@
     "preinstall": "echo 'Skipping global package installation'",
     "sloc": "sloc src src-tauri/src",
     "upgrade": "concurrently \"pnpm up\" \"cd src-tauri && cargo update && cargo clean\"",
-    "test": "mocha"
+    "test": "mocha",
+    "lint": "eslint src --ext ts,tsx",
+    "lint:fix": "eslint src --ext ts,tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "type-check": "tsc --noEmit",
+    "clippy": "cd src-tauri && cargo clippy --all-targets --all-features -- -D warnings",
+    "fmt": "cd src-tauri && cargo fmt --all",
+    "fmt:check": "cd src-tauri && cargo fmt --all -- --check",
+    "test:rust": "cd src-tauri && cargo test --all-features",
+    "check": "pnpm type-check && pnpm lint && pnpm format:check && pnpm fmt:check",
+    "check:fix": "pnpm lint:fix && pnpm format && pnpm fmt",
+    "prepare": "husky"
   },
   "eslintConfig": {
     "extends": [
@@ -72,23 +103,45 @@
   "devDependencies": {
     "@tauri-apps/cli": "^2.8.4",
     "@types/js-cookie": "^3.0.6",
+    "@typescript-eslint/eslint-plugin": "^8.46.4",
+    "@typescript-eslint/parser": "^8.46.4",
     "@vitejs/plugin-react": "^4.7.0",
     "chai": "^5.3.3",
     "concurrently": "^9.2.1",
     "cross-env": "^7.0.3",
     "dotenv-load": "^3.0.0",
+    "eslint": "^9.39.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "mocha": "^11.7.4",
     "postcss": "^8.5.6",
     "postcss-preset-mantine": "^1.18.0",
     "postcss-simple-vars": "^7.0.1",
+    "prettier": "^3.6.2",
     "rollup-plugin-visualizer": "^5.14.0",
     "selenium-webdriver": "^4.36.0",
     "terser": "^5.44.0",
     "toml": "^3.0.0",
-    "vite": "^6.3.6",
+    "vite": "^7.2.2",
     "vite-plugin-remove-console": "^2.2.0",
     "vite-plugin-top-level-await": "^1.6.0"
   },
-  "resolutions": {},
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,json,md}": [
+      "prettier --write"
+    ],
+    "src-tauri/src/**/*.rs": [
+      "cargo fmt --"
+    ]
+  },
+  "pnpm": {
+    "overrides": {
+      "js-yaml": ">=4.1.1"
+    }
+  },
   "packageManager": "pnpm@10.10.0+sha512.d615db246fe70f25dcfea6d8d73dee782ce23e2245e3c4f6f888249fb568149318637dca73c2c5c8ef2a4ca0d5657fb9567188bfab47f566d1ee6ce987815c39"
 }
