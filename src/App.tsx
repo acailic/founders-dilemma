@@ -51,7 +51,7 @@ interface View {
 		const { usingCustomTitleBar } = useTauriContext();
 		const { config } = useGameConfig();
 		const accentPreset = THEME_PRESETS[config.themeAccent] ?? THEME_PRESETS.aurora;
-		const accentMantineColor = accentPreset.primaryColor as any;
+		const accentMantineColor = accentPreset.primaryColor;
 
 	// left sidebar
 		const views: View[] = [
@@ -89,81 +89,86 @@ interface View {
 
 
 	// Tauri event listeners (run on mount)
-	if (isTauri()) {
-		useEffect(() => {
-			const promise = tauriEvent.listen('longRunningThread', ({ payload }: { payload: any }) => {
-				tauriLogger.info(payload.message);
+	const isTauriApp = isTauri();
+
+	useEffect(() => {
+		if (!isTauriApp) return;
+		const promise = tauriEvent.listen('longRunningThread', ({ payload }: { payload: any }) => {
+			tauriLogger.info(payload.message);
+		});
+		return () => { promise.then(unlisten => unlisten()) };
+	}, [isTauriApp]);
+
+	// system tray events
+	useEffect(() => {
+		if (!isTauriApp) return;
+		const promise = tauriEvent.listen('systemTray', ({ payload, ...eventObj }: { payload: { message: string } }) => {
+			tauriLogger.info(payload.message);
+			// for debugging purposes only
+			notifications.show({
+				title: '[DEBUG] System Tray Event',
+				message: payload.message
 			});
-			return () => { promise.then(unlisten => unlisten()) };
-		}, []);
-		// system tray events
-		useEffect(() => {
-			const promise = tauriEvent.listen('systemTray', ({ payload, ...eventObj }: { payload: { message: string } }) => {
-				tauriLogger.info(payload.message);
-				// for debugging purposes only
+		});
+		return () => { promise.then(unlisten => unlisten()) };
+	}, [isTauriApp]);
+
+	// update checker
+	useEffect(() => {
+		if (!isTauriApp) return;
+		(async () => {
+			const update = await tauriUpdater.check();
+			if (update) {
+				const color = colorScheme === 'dark' ? 'teal' : 'teal.8';
 				notifications.show({
-					title: '[DEBUG] System Tray Event',
-					message: payload.message
+					id: 'UPDATE_NOTIF',
+					title: t('updateAvailable', { v: update.version }),
+					color,
+					message: <>
+						<Text>{update.body}</Text>
+						<Button color={color} style={{ width: '100%' }} onClick={() => update.downloadAndInstall(event => {
+							switch (event.event) {
+								case 'Started':
+									notifications.show({ title: t('installingUpdate', { v: update.version }), message: t('relaunchMsg'), autoClose: false });
+									// contentLength = event.data.contentLength;
+									// tauriLogger.info(`started downloading ${event.data.contentLength} bytes`);
+									break;
+								case 'Progress':
+									// downloaded += event.data.chunkLength;
+									// tauriLogger.info(`downloaded ${downloaded} from ${contentLength}`);
+									break;
+								case 'Finished':
+									// tauriLogger.info('download finished');
+									break;
+							}
+						}).then(relaunch)}>{t('installAndRelaunch')}</Button>
+					</>,
+					autoClose: false
 				});
-			});
-			return () => { promise.then(unlisten => unlisten()) };
-		}, []);
+			}
+		})()
+	}, [isTauriApp, colorScheme, t]);
 
-		// update checker
-		useEffect(() => {
-			(async () => {
-				const update = await tauriUpdater.check();
-				if (update) {
-					const color = colorScheme === 'dark' ? 'teal' : 'teal.8';
-					notifications.show({
-						id: 'UPDATE_NOTIF',
-						title: t('updateAvailable', { v: update.version }),
-						color,
-						message: <>
-							<Text>{update.body}</Text>
-							<Button color={color} style={{ width: '100%' }} onClick={() => update.downloadAndInstall(event => {
-								switch (event.event) {
-									case 'Started':
-										notifications.show({ title: t('installingUpdate', { v: update.version }), message: t('relaunchMsg'), autoClose: false });
-										// contentLength = event.data.contentLength;
-										// tauriLogger.info(`started downloading ${event.data.contentLength} bytes`);
-										break;
-									case 'Progress':
-										// downloaded += event.data.chunkLength;
-										// tauriLogger.info(`downloaded ${downloaded} from ${contentLength}`);
-										break;
-									case 'Finished':
-										// tauriLogger.info('download finished');
-										break;
-								}
-							}).then(relaunch)}>{t('installAndRelaunch')}</Button>
-						</>,
-						autoClose: false
-					});
-				}
-			})()
-		}, []);
+	// Handle additional app launches (url, etc.)
+	useEffect(() => {
+		if (!isTauriApp) return;
+		const promise = tauriEvent.listen('newInstance', async ({ payload, ...eventObj }: { payload: { args: string[], cwd: string } }) => {
+			const appWindow = getCurrentWebviewWindow();
+			if (!(await appWindow.isVisible())) await appWindow.show();
 
-		// Handle additional app launches (url, etc.)
-		useEffect(() => {
-			const promise = tauriEvent.listen('newInstance', async ({ payload, ...eventObj }: { payload: { args: string[], cwd: string } }) => {
-				const appWindow = getCurrentWebviewWindow();
-				if (!(await appWindow.isVisible())) await appWindow.show();
+			if (await appWindow.isMinimized()) {
+				await appWindow.unminimize();
+				await appWindow.setFocus();
+			}
 
-				if (await appWindow.isMinimized()) {
-					await appWindow.unminimize();
-					await appWindow.setFocus();
-				}
+			let args = payload?.args;
+			let cwd = payload?.cwd;
+			if (args?.length > 1) {
 
-				let args = payload?.args;
-				let cwd = payload?.cwd;
-				if (args?.length > 1) {
-
-				}
-			});
-			return () => { promise.then(unlisten => unlisten()) };
-		}, []);
-	}
+			}
+		});
+		return () => { promise.then(unlisten => unlisten()) };
+	}, [isTauriApp]);
 
 	function NavLinks() {
 		return views.map((view, index) => (
