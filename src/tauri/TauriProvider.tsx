@@ -46,8 +46,6 @@ const TauriContext = React.createContext<SystemProvideContext>({
 
 export const useTauriContext = () => useContext(TauriContext);
 
-var root: HTMLElement;
-
 export function TauriProvider({ children }: PropsWithChildren) {
 
 	const [loading, setLoading] = useState(true);
@@ -62,65 +60,69 @@ export function TauriProvider({ children }: PropsWithChildren) {
 	const [scaleFactor, setScaleFactor] = useState(1);
 	const [containerSize, setContainerSize] = useState('100%');
 
-	if (isTauri()) {
-		const appWindow = getCurrentWebviewWindow();
+	const isTauriApp = isTauri();
+	const appWindow = isTauriApp ? getCurrentWebviewWindow() : null;
 
-		const tauriInterval = useInterval(async () => {
-			setFullscreen(await appWindow.isFullscreen());
+	const tauriInterval = useInterval(async () => {
+		if (!isTauriApp || !appWindow) return;
+		setFullscreen(await appWindow.isFullscreen());
 
-			const monitor = await currentMonitor();
-			if (monitor !== null) {
-				const scaleFactor = monitor.scaleFactor;
-				if (osType === 'linux') setContainerSize(`${100 / scaleFactor}%`);
+		const monitor = await currentMonitor();
+		if (monitor !== null) {
+			const scaleFactor = monitor.scaleFactor;
+			if (osType === 'linux') setContainerSize(`${100 / scaleFactor}%`);
+		}
+
+		setScaleFactor(scaleFactor);
+	}, 200);
+
+	useEffect(() => {
+		if (!isTauriApp) return;
+		tauriInterval.start();
+		return tauriInterval.stop;
+	}, [isTauriApp, tauriInterval]);
+
+	useEffect(() => {
+		if (!isTauriApp || !appWindow) return;
+		if (osType === 'windows') {
+			appWindow.setDecorations(!WIN32_CUSTOM_TITLEBAR);
+			if (WIN32_CUSTOM_TITLEBAR) {
+				document.documentElement.style.setProperty('--titlebar-height', '28px');
 			}
+		}
+	}, [isTauriApp, appWindow, osType]);
 
-			setScaleFactor(scaleFactor);
-		}, 200);
+	useEffect(() => {
+		if (!isTauriApp) return;
+		// hide titlebar when: in fullscreen, not on Windows, and explicitly allowing custom titlebar
+		setUsingCustomTitleBar(!isFullScreen && osType === 'windows' && WIN32_CUSTOM_TITLEBAR);
+	}, [isTauriApp, isFullScreen, osType]);
 
-		useEffect(() => {
-			tauriInterval.start();
-			return tauriInterval.stop;
-		}, []);
-
-		useEffect(() => {
-			if (osType === 'windows') {
-				appWindow.setDecorations(!WIN32_CUSTOM_TITLEBAR);
-				if (WIN32_CUSTOM_TITLEBAR) {
-					document.documentElement.style.setProperty('--titlebar-height', '28px');
-				}
-			}
-		}, [osType]);
-
-		useEffect(() => {
-			// hide titlebar when: in fullscreen, not on Windows, and explicitly allowing custom titlebar
-			setUsingCustomTitleBar(!isFullScreen && osType === 'windows' && WIN32_CUSTOM_TITLEBAR);
-		}, [isFullScreen, osType]);
-
-		useEffect(() => {
-			// if you want to listen for event listeners, use mountID trick to call unlisten on old listeners
-			const callTauriAPIs = async () => {
-				setDownloadDir(await tauriPath.downloadDir());
-				const _documents = await tauriPath.documentDir();
-				setDocumentDir(_documents);
-				const _osType = os.type();
-				setOsType(_osType);
-				const _fileSep = _osType === 'windows' ? '\\' : '/';
-				setFileSep(_fileSep);
-				await fs.mkdir(APP_NAME, { baseDir: fs.BaseDirectory.Document, recursive: true });
-				setAppDocuments(`${_documents}${APP_NAME}`);
-				setLoading(false);
-				// if you aren't using the window-state plugin, you need to import the following
-				// import { Webview } from '@tauri-apps/api/webview';
-				// and uncomment the following
-				// const mainWebview = await Webview.getByLabel('main')!;
-				// mainWebview?.show();
-				// Why do we need to do this? The default background color of webviews is white
-				//  so we should show the window after the react has mounted
-				// See: https://github.com/tauri-apps/tauri/issues/1564
-			}
-			callTauriAPIs().catch(console.error);
-		}, []);
-	}
+	useEffect(() => {
+		if (!isTauriApp) return;
+		// if you want to listen for event listeners, use mountID trick to call unlisten on old listeners
+		const callTauriAPIs = async () => {
+			setDownloadDir(await tauriPath.downloadDir());
+			const _documents = await tauriPath.documentDir();
+			setDocumentDir(_documents);
+			const _osType = os.type();
+			setOsType(_osType);
+			const _fileSep = _osType === 'windows' ? '\\' : '/';
+			setFileSep(_fileSep);
+			await fs.mkdir(APP_NAME, { baseDir: fs.BaseDirectory.Document, recursive: true });
+			setAppDocuments(`${_documents}${APP_NAME}`);
+			setLoading(false);
+			// if you aren't using the window-state plugin, you need to import the following
+			// import { Webview } from '@tauri-apps/api/webview';
+			// and uncomment the following
+			// const mainWebview = await Webview.getByLabel('main')!;
+			// mainWebview?.show();
+			// Why do we need to do this? The default background color of webviews is white
+			//  so we should show the window after the react has mounted
+			// See: https://github.com/tauri-apps/tauri/issues/1564
+		}
+		callTauriAPIs().catch(console.error);
+	}, [isTauriApp]);
 
 	return <TauriContext.Provider value={{ loading, fileSep, downloads, documents, osType, appDocuments, isFullScreen, usingCustomTitleBar, scaleFactor }}>
 		{children}
@@ -150,29 +152,31 @@ export async function getUserAppFiles() {
 }
 
 export function useMinWidth(minWidth: number) {
-	if (isTauri()) {
-		useEffect(() => {
-			async function resizeWindow() {
-				// to set a size consistently across devices,
-				//  one must use LogicalSize (Physical cannot be relied upon)
+	const isTauriApp = isTauri();
 
-				const physicalSize = await WebviewWindow.getCurrent().innerSize();
-				// Since innerSize returns Physical size, we need
-				//   to get the current monitor scale factor
-				//   to convert the physical size into a logical size
-				const monitor = await currentMonitor();
-				if (monitor !== null) {
-					const scaleFactor = monitor.scaleFactor;
-					const logicalSize = physicalSize.toLogical(scaleFactor);
-					if (logicalSize.width < minWidth) {
-						logicalSize.width = minWidth;
-						await getCurrentWebviewWindow().setSize(logicalSize);
-					}
+	useEffect(() => {
+		if (!isTauriApp) return;
+
+		async function resizeWindow() {
+			// to set a size consistently across devices,
+			//  one must use LogicalSize (Physical cannot be relied upon)
+
+			const physicalSize = await WebviewWindow.getCurrent().innerSize();
+			// Since innerSize returns Physical size, we need
+			//   to get the current monitor scale factor
+			//   to convert the physical size into a logical size
+			const monitor = await currentMonitor();
+			if (monitor !== null) {
+				const scaleFactor = monitor.scaleFactor;
+				const logicalSize = physicalSize.toLogical(scaleFactor);
+				if (logicalSize.width < minWidth) {
+					logicalSize.width = minWidth;
+					await getCurrentWebviewWindow().setSize(logicalSize);
 				}
 			}
-			resizeWindow().catch(console.error);
-		}, []); // [] to ensure on first render
-	}
+		}
+		resizeWindow().catch(console.error);
+	}, [isTauriApp, minWidth]); // minWidth added to dependency array
 }
 
 // TODO: turn into generator?
