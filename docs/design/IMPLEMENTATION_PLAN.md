@@ -15,6 +15,7 @@ This is a **3-week implementation roadmap** to build a playable, polished simula
 ### Day 1-2: Rust Game Engine Foundation
 
 **Create module structure** in `src-tauri/src/game/`:
+
 ```
 src-tauri/src/game/
 ├── mod.rs          # Module exports
@@ -26,6 +27,7 @@ src-tauri/src/game/
 ```
 
 **Tasks**:
+
 1. Define `GameState` struct in `state.rs` with all metrics from design doc
 2. Implement `new_game(difficulty)` function with proper initialization
 3. Create `Action` enum in `actions.rs` with 5 essential actions:
@@ -38,6 +40,7 @@ src-tauri/src/game/
 5. Implement victory/defeat detection in `victory.rs`
 
 **Rust Dependencies to Add**:
+
 ```toml
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
@@ -69,11 +72,13 @@ fn take_turn(state: GameState, actions: Vec<Action>) -> Result<GameState, String
 ```
 
 **Implement persistence using Tauri Store**:
+
 - Save current state to JSON
 - Autosave every turn
 - Load most recent save on app start
 
 **Tasks**:
+
 1. Wire up commands to game engine functions
 2. Add error handling for invalid states/actions
 3. Implement save/load with Tauri Store plugin
@@ -88,6 +93,7 @@ fn take_turn(state: GameState, actions: Vec<Action>) -> Result<GameState, String
 **Create new view**: `src/views/GameView.tsx`
 
 **Components to build**:
+
 ```
 src/components/game/
 ├── GameDashboard.tsx      # Main container
@@ -99,6 +105,7 @@ src/components/game/
 ```
 
 **StatsPanel** displays (using Mantine components):
+
 - Week number
 - Runway (months) - color-coded (green > 6, yellow 3-6, red < 3)
 - MRR / Burn
@@ -107,6 +114,7 @@ src/components/game/
 - Tech Debt / Compliance Risk
 
 **ActionSelector** shows:
+
 - Action cards in grid (2-3 columns)
 - Each card shows:
   - Icon + Title
@@ -117,6 +125,7 @@ src/components/game/
 - Focus slots remaining counter
 
 **Turn flow**:
+
 1. Player selects up to `focus_slots` actions
 2. Clicks "End Week"
 3. Frontend calls `take_turn(state, actions)`
@@ -125,6 +134,7 @@ src/components/game/
 6. Check for victory/defeat → show modal if game over
 
 **Tasks**:
+
 1. Create GameDashboard component structure
 2. Build StatsPanel with all metrics
 3. Create ActionCard component (static for now)
@@ -143,6 +153,7 @@ src/components/game/
 ### Day 7-8: Complete Action Set
 
 **Expand actions.rs** to include all 15+ actions from design:
+
 - Product: ShipFeature, RefactorCode, RunExperiment
 - Sales: FounderLedSales, ContentLaunch, DevRel, PaidAds
 - Team: Hire, Coach, Fire
@@ -151,12 +162,14 @@ src/components/game/
 - Recovery: TakeBreak, FamilyTime, SelfCare
 
 **For each action**:
+
 1. Define parameters (enums for quality/type/etc.)
 2. Implement resolution logic with base effects
 3. Add variance (±10-20%)
 4. Add conditional effects (tech debt → incidents, etc.)
 
 **Tasks**:
+
 1. Complete Action enum with all variants
 2. Implement `resolve_action()` for each
 3. Add parameter validation
@@ -170,17 +183,20 @@ src/components/game/
 ### Day 9-10: Event System
 
 **Implement events.rs**:
+
 - Random event generator (5-15% chance per week)
 - State-dependent event triggers (high debt → incidents)
 - Action outcome events (feature goes viral)
 - Dilemma system
 
 **Event types to implement**:
+
 - Positive: ViralMoment, BigLogoSigns, PressFeature
 - Negative: CloudOutage, KeyHireChurns, CompetitorLaunch, SecurityIncident
 - Dilemmas: CustomDealOffer, AcquisitionOffer
 
 **UI components**:
+
 ```
 src/components/game/
 ├── EventModal.tsx         # Shows events/dilemmas
@@ -189,6 +205,7 @@ src/components/game/
 ```
 
 **Tasks**:
+
 1. Build event probability calculator
 2. Implement random event selection
 3. Create dilemma resolution logic
@@ -202,12 +219,14 @@ src/components/game/
 ### Day 11-12: Economy Model & Difficulty Modes
 
 **Enhance economy.rs**:
+
 - Detailed burn calculation (salaries + infra + tools)
 - Revenue model with churn
 - Sales cycle lag (booked vs. collected)
 - Growth calculations with multipliers
 
 **Add difficulty modes** in `state.rs`:
+
 - `DifficultyMode` enum with 4 variants
 - Mode-specific starting conditions
 - Mode-specific multipliers
@@ -215,6 +234,7 @@ src/components/game/
 - Compliance burden for Regulated mode
 
 **UI**:
+
 ```
 src/components/game/
 ├── NewGameModal.tsx       # Difficulty selection
@@ -222,6 +242,7 @@ src/components/game/
 ```
 
 **Tasks**:
+
 1. Implement full economy calculations
 2. Add difficulty mode data structures
 3. Apply mode modifiers to action outcomes
@@ -235,12 +256,14 @@ src/components/game/
 ### Day 13-14: Charts & Visualization
 
 **Add charting library**:
+
 ```bash
 cd ai_working/founders-dilemma
 pnpm add recharts
 ```
 
 **Create chart components**:
+
 ```
 src/components/game/charts/
 ├── RunwayChart.tsx        # Line chart: runway over time
@@ -250,12 +273,14 @@ src/components/game/charts/
 ```
 
 **Charts to show** (last 12 weeks):
+
 - Runway (months) - with danger zone shading (< 3 months)
 - MRR vs Burn - with breakeven line
 - Morale + Reputation dual line
 - WAU growth - with target growth line
 
 **Tasks**:
+
 1. Install Recharts
 2. Update GameState to track history snapshots
 3. Build chart components with Recharts
@@ -273,6 +298,7 @@ src/components/game/charts/
 ### Day 15-16: UI/UX Polish
 
 **Visual improvements**:
+
 - Icon library for actions (React Icons)
 - Color-coded metrics (green/yellow/red thresholds)
 - Animations for events (Mantine Modal transitions)
@@ -280,6 +306,7 @@ src/components/game/charts/
 - Loading states for turn processing
 
 **Components to enhance**:
+
 ```
 src/components/game/
 ├── VictoryProgress.tsx    # Visual escape velocity indicator
@@ -288,6 +315,7 @@ src/components/game/
 ```
 
 **Tasks**:
+
 1. Add icons to all actions
 2. Implement color coding for all metrics
 3. Add tooltips with explanations
@@ -302,6 +330,7 @@ src/components/game/
 ### Day 17-18: Balance & Playtesting
 
 **Create test scenarios**:
+
 ```
 src-tauri/src/game/tests/
 ├── test_scenarios.rs      # Unit tests for game scenarios
@@ -309,6 +338,7 @@ src-tauri/src/game/tests/
 ```
 
 **Balance targets**:
+
 - Win rate on Normal: 40-50% for skilled players
 - Average game length: 52-78 weeks (1-1.5 years)
 - Runway should feel tight but not impossible
@@ -316,6 +346,7 @@ src-tauri/src/game/tests/
 - No single dominant strategy
 
 **Tasks**:
+
 1. Write automated test scenarios:
    - Baseline survival (12 weeks with defaults)
    - Growth path (2x WAU in 26 weeks)
@@ -339,6 +370,7 @@ src-tauri/src/game/tests/
 ### Day 19-20: Final Features
 
 **Add missing features**:
+
 1. **Tutorial/Onboarding**:
    - First-time player guide
    - Tooltips explaining each metric
@@ -355,6 +387,7 @@ src-tauri/src/game/tests/
    - Keyboard shortcuts (1-9 for actions, Enter for end turn)
 
 **Components**:
+
 ```
 src/components/game/
 ├── Tutorial.tsx           # First-time guide
@@ -363,6 +396,7 @@ src/components/game/
 ```
 
 **Tasks**:
+
 1. Build Tutorial component with step-by-step guide
 2. Implement Founder Score calculation
 3. Create VictoryStats screen with detailed breakdown
@@ -377,6 +411,7 @@ src/components/game/
 ### Day 21: Bug Fixes & Release Prep
 
 **Final checklist**:
+
 - [ ] All Tauri commands tested
 - [ ] State persistence works reliably
 - [ ] No crashes on edge cases (0 runway, negative morale)
@@ -389,6 +424,7 @@ src/components/game/
 - [ ] Undo doesn't break state
 
 **Tasks**:
+
 1. Fix all known bugs
 2. Test on different screen sizes
 3. Test all difficulty modes
@@ -405,22 +441,26 @@ src/components/game/
 ## Technical Decisions
 
 ### State Management
+
 - **Rust owns state**: GameState is the single source of truth
 - **React displays state**: No business logic in UI
 - **Commands are synchronous**: Turn resolution happens in Rust, returns new state
 - **Autosave on every turn**: Use Tauri Store for persistence
 
 ### Action Resolution
+
 - **Deterministic with variance**: Same action + RNG seed = same result
 - **Compound effects**: Actions modify multiple stats
 - **Event triggers**: Actions can spawn events based on probability
 
 ### Event System
+
 - **Two-phase**: Random events + action outcome events
 - **Dilemmas block turn**: Must resolve before continuing
 - **Event log**: Show last 10 events in UI
 
 ### Balance Philosophy
+
 - **Tight but fair**: Runway should feel scarce
 - **Multiple viable strategies**: No single "correct" path
 - **Compound mechanics**: Early decisions affect late game
@@ -479,12 +519,14 @@ ai_working/founders-dilemma/
 ## Dependencies to Add
 
 ### Rust (`src-tauri/Cargo.toml`):
+
 ```toml
 rand = "0.8"
 uuid = { version = "1.0", features = ["v4", "serde"] }
 ```
 
 ### TypeScript (`package.json`):
+
 ```json
 "recharts": "^2.10.0"
 ```
@@ -494,17 +536,20 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 ## Testing Strategy
 
 ### Unit Tests (Rust)
+
 - Test action resolution logic
 - Test economy calculations
 - Test victory detection
 - Test event probability
 
 ### Integration Tests (TypeScript)
+
 - Test Tauri command calls
 - Test state persistence
 - Test UI flows (action selection → turn advancement)
 
 ### Manual Testing
+
 - Playthrough each difficulty mode
 - Test all actions
 - Trigger all events
@@ -518,18 +563,23 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 ## Known Challenges & Solutions
 
 ### Challenge: Balancing difficulty
+
 **Solution**: Run 100 simulated games, track win rates, adjust multipliers iteratively
 
 ### Challenge: Action effects feel arbitrary
+
 **Solution**: Show expected ranges in UI, add tooltips explaining why effects happen
 
 ### Challenge: Events feel random/unfair
+
 **Solution**: Make event probability visible (tech debt % = incident chance), let player see risks
 
 ### Challenge: Victory condition too hard/easy
+
 **Solution**: Playtest extensively, adjust "escape velocity" thresholds based on data
 
 ### Challenge: UI complexity
+
 **Solution**: Progressive disclosure - start simple (stats + actions), reveal charts/logs later
 
 ---
@@ -537,6 +587,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 ## Success Metrics
 
 **MVP Complete (End of Week 1)**:
+
 - Can start new game
 - Can select actions
 - State changes correctly
@@ -544,6 +595,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 - State persists
 
 **Feature Complete (End of Week 2)**:
+
 - All 15+ actions work
 - Events trigger and affect state
 - Dilemmas presented and resolved
@@ -551,6 +603,7 @@ uuid = { version = "1.0", features = ["v4", "serde"] }
 - Charts show history
 
 **Polished (End of Week 3)**:
+
 - Win rate is 40-50% on Normal
 - Game looks professional
 - Tutorial exists

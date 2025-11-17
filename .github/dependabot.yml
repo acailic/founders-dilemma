@@ -1,0 +1,85 @@
+version: 2
+updates:
+  # Frontend dependencies (npm/pnpm)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+    reviewers:
+      - "acailic"
+    assignees:
+      - "acailic"
+    groups:
+      # Group Tauri plugins together
+      tauri-plugins:
+        patterns:
+          - "@tauri-apps/*"
+      # Group React ecosystem
+      react:
+        patterns:
+          - "react*"
+          - "@types/react*"
+      # Group Mantine UI
+      mantine:
+        patterns:
+          - "@mantine/*"
+      # Group dev dependencies
+      dev-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Rust dependencies (Cargo)
+  - package-ecosystem: "cargo"
+    directory: "/src-tauri"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "rust"
+      - "automated"
+    reviewers:
+      - "acailic"
+    assignees:
+      - "acailic"
+    groups:
+      # Group Tauri core dependencies
+      tauri:
+        patterns:
+          - "tauri*"
+      # Group serde ecosystem
+      serde:
+        patterns:
+          - "serde*"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
+      - "github-actions"
+      - "automated"
+    reviewers:
+      - "acailic"

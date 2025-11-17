@@ -1,9 +1,11 @@
 # Office Cam Widget - Testing Guide
 
 ## Overview
+
 The Office Cam widget is a new visual feature that translates abstract metrics into concrete, memorable visualizations of your startup's office state.
 
 ## Running the Game
+
 ```bash
 cd /Users/aleksandarilic/Documents/github/acailic/founders-dilemma
 pnpm dev
@@ -12,13 +14,16 @@ pnpm dev
 ## What to Test
 
 ### 1. Widget Visibility
+
 - ✅ Office Cam appears on the Dashboard tab
 - ✅ Located below Critical Status Banner
 - ✅ Shows "📹 Office Cam" header with "Live" badge
 - ✅ Widget is clickable with hover effect
 
 ### 2. Team Size Visualization
+
 Test with different burn rates:
+
 - **Low burn ($10k-20k/mo)**: Should show 1-2 people
 - **Medium burn ($30k-50k/mo)**: Should show 3-5 people
 - **High burn ($60k+/mo)**: Should show 6+ people
@@ -26,7 +31,9 @@ Test with different burn rates:
 **How to test**: Take different actions (Hire increases burn, observe team size change). Team size is ultimately capped between 1 and 12 people by `estimateTeamSizeFromBurn` in `src/lib/office/stateMapper.ts`, so extremely high burn values should still produce a maximum of 12 avatars.
 
 ### 3. Morale Visualization
+
 Test with different morale levels:
+
 - **80-100**: Should show 😊 (thriving)
 - **60-79**: Should show 🙂 (motivated)
 - **40-59**: Should show 😐 (steady)
@@ -34,13 +41,16 @@ Test with different morale levels:
 - **0-19**: Should show 😰 (burnt out)
 
 **How to test**:
+
 - Take Break → morale increases → people look happier
 - Keep grinding without breaks → morale decreases → people look stressed
 
 _Note_: Morale values are sanitized to the 0-100 range before determining emoji and descriptions, so out-of-range game data should still map to the correct visual thresholds above.
 
 ### 4. Clutter Level (Tech Debt)
+
 Test with different tech debt levels:
+
 - **0-20**: ✨ Pristine (green badge)
 - **20-40**: 📋 Organized (teal badge)
 - **40-60**: 📦 Busy (yellow badge)
@@ -48,13 +58,16 @@ Test with different tech debt levels:
 - **80-100**: 🗂️ Chaotic (red badge)
 
 **How to test**:
+
 - Ship Feature (Quick) → increases tech debt → office gets more cluttered
 - Refactor Code (if implemented) → decreases tech debt → office gets cleaner
 
 _Note_: Tech debt percentages are clamped between 0-100 inside the widget helpers to prevent invalid states from leaking into the visualization.
 
 ### 5. Office Vibe
+
 Test momentum + morale combinations:
+
 - **High momentum (>80) + High morale (>70)**: 🎉 "Buzzing with energy!"
 - **Medium momentum (>60) + Medium morale (>60)**: 💪 "Productive momentum"
 - **Medium momentum (>40)**: ⚙️ "Steady work"
@@ -64,7 +77,9 @@ Test momentum + morale combinations:
 **How to test**: Play several weeks and observe how vibe changes with your actions
 
 ### 6. Expanded Modal
+
 Click the widget to open detailed view:
+
 - ✅ Modal opens with full office overview
 - ✅ Shows all team members in grid layout
 - ✅ Individual tooltips on hover
@@ -76,6 +91,7 @@ Click the widget to open detailed view:
 - ✅ Accessible trigger: Enter or Space opens the modal when the widget is focused; Escape closes it.
 
 ### 7. Visual Feedback
+
 - ✅ Widget has hover effect (lifts up, shadow increases)
 - ✅ Active state on click (slight depression)
 - ✅ Mini office background gradient brightens on hover
@@ -84,28 +100,36 @@ Click the widget to open detailed view:
 ## Test Scenarios
 
 ### Scenario 1: Early Startup (Week 1-10)
+
 **Expected State**:
+
 - Small team (1-3 people)
 - Clean office (low tech debt)
 - High morale (everyone excited)
 - Vibe: 🤔 or 💪 (planning/momentum)
 
 ### Scenario 2: Growth Phase (Week 15-30)
+
 **Expected State**:
+
 - Medium team (4-7 people)
 - Some clutter (medium tech debt from fast shipping)
 - Variable morale (depending on balance)
 - Vibe: 💪 or ⚙️ (productive work)
 
 ### Scenario 3: Crunch Mode (High burn, low runway)
+
 **Expected State**:
+
 - Large team (8+ people)
 - Very cluttered (high tech debt)
 - Low morale (stressed team)
 - Vibe: 😴 (low energy)
 
 ### Scenario 4: Recovery After Break
+
 **Expected State**:
+
 - Team size unchanged
 - Clutter unchanged (or improved if refactored)
 - Improved morale (happier faces)
@@ -121,11 +145,13 @@ Click the widget to open detailed view:
 ## Visual Regression Testing
 
 Compare these states:
+
 1. Week 1 office (pristine)
 2. Week 20 office (established)
 3. Week 40 office (mature)
 
 Take screenshots and verify:
+
 - Team size matches burn rate trend
 - Clutter matches tech debt trend
 - Morale matches emoji expressions
@@ -148,6 +174,7 @@ Take screenshots and verify:
 ## Success Criteria
 
 The Office Cam is successful if:
+
 1. Players immediately understand what it shows
 2. Visual state matches game metrics accurately
 3. Provides emotional connection to the team
@@ -174,6 +201,7 @@ The Office Cam is successful if:
 ## Reporting Issues
 
 If you find bugs or unexpected behavior:
+
 1. Note the week number
 2. Note the game state (metrics)
 3. Describe what you see vs what you expect

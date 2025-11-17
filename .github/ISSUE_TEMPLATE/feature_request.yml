@@ -1,0 +1,110 @@
+name: Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement", "needs-triage"]
+assignees:
+  - acailic
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! We love community ideas for making Founder's Dilemma better.
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Feature Category
+      description: What type of feature are you suggesting?
+      options:
+        - New Action
+        - New Synergy Combination
+        - New Market Condition
+        - New Strategic Dilemma
+        - UI/UX Improvement
+        - Game Mechanic Change
+        - Educational Content
+        - Technical Enhancement
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? Why is it needed?
+      placeholder: As a player, I find it difficult to understand when to hire my first employee...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature you'd like to see
+      placeholder: |
+        Add a new action called "Hire First Employee" that:
+        - Costs $8k/month
+        - Provides +5% velocity
+        - Creates a dilemma about spending vs. runway
+    validations:
+      required: true
+
+  - type: textarea
+    id: educational-value
+    attributes:
+      label: Educational Value
+      description: What founder principle does this teach?
+      placeholder: Teaches the importance of timing for first hires and trade-offs between speed and runway
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions?
+      placeholder: Could be implemented as a market condition instead of an action
+    validations:
+      required: false
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Notes
+      description: Do you have ideas about how this could be implemented?
+      placeholder: Could use the existing action system with a new synergy check
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope
+      description: Please check all that apply
+      options:
+        - label: This is a small, focused feature
+        - label: This is a large feature that may need multiple PRs
+        - label: This would require changes to game balance
+        - label: This might be a breaking change
+        - label: I'm willing to help implement this
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Add any other context, mockups, or examples
+      placeholder: Here's a mockup of how the UI could look...
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      description: Please confirm the following
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: This feature fits the educational mission of the game
+          required: true

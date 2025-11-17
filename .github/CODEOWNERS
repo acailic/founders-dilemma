@@ -1,0 +1,31 @@
+# Code Owners for Founder's Dilemma
+#
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence, they will
+# be requested for review when someone opens a pull request.
+
+# Default owners for everything
+* @acailic
+
+# Rust/Tauri backend
+/src-tauri/ @acailic
+
+# Frontend
+/src/ @acailic
+
+# GitHub workflows and CI
+/.github/ @acailic
+
+# Documentation
+*.md @acailic
+/docs/ @acailic
+
+# Configuration files
+*.yml @acailic
+*.yaml @acailic
+*.json @acailic
+*.toml @acailic
+
+# Game design and balance
+/GAME_DESIGN.md @acailic
+/src-tauri/src/game/ @acailic

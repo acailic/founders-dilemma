@@ -3,12 +3,14 @@
 ## Architecture Overview
 
 ### Tech Stack
+
 - **Backend**: Rust (game engine, state machine, all business logic)
 - **Frontend**: React + Mantine UI (presentation only)
 - **Bridge**: Tauri commands (Rust → TypeScript API)
 - **Persistence**: Tauri Store plugin (JSON key-value)
 
 ### Design Philosophy
+
 - **Pure state machine**: All game logic in Rust, deterministic
 - **No business logic in UI**: React only displays state and sends actions
 - **Serious simulation**: Realistic probabilities and interconnected systems
@@ -243,6 +245,7 @@ pub enum ContentType {
 ### Action Resolution
 
 Each action:
+
 1. **Consumes focus slots** (some actions take more than 1)
 2. **Modifies multiple stats** with variance (±10-20%)
 3. **May trigger events** (success/failure outcomes)
@@ -252,6 +255,7 @@ Each action:
 7. **Detects synergies** (bonus effects for complementary actions)
 
 Example: `ShipFeature { quality: Quick }`
+
 - **Cost**: 1 focus slot
 - **Base Effects**:
   - WAU: +5% ± 3%
@@ -263,6 +267,7 @@ Example: `ShipFeature { quality: Quick }`
   - 5% chance: "Critical bug shipped" (-10 reputation, incident)
 
 Example: `RefactorCode { depth: Surface }` (Synergy: +0.1 velocity with Coach)
+
 - **Cost**: 1 focus slot
 - **Base Effects**:
   - Tech Debt: -10-15 ± 2
@@ -275,9 +280,11 @@ Example: `RefactorCode { depth: Surface }` (Synergy: +0.1 velocity with Coach)
 ## Action Synergies
 
 ### Synergy System Overview
+
 Action synergies reward players for selecting complementary actions in the same turn, encouraging strategic thinking and experimentation. Synergies activate automatically when specific action combinations are chosen, providing bonus effects and educational feedback. They are designed to be discoverable, with clear explanations to teach startup strategy.
 
 ### Synergy Combinations (15-20 Examples)
+
 - **Launch Momentum**: ShipFeature + ContentLaunch → +15% WAU boost, +5 reputation
 - **Engineering Excellence**: RefactorCode + Coach → +0.2 velocity, -5 tech debt
 - **Credibility Boost**: FounderLedSales + DevRel → +10 reputation, +5% MRR growth
@@ -295,13 +302,16 @@ Action synergies reward players for selecting complementary actions in the same 
 - **Experiment Iteration**: RunExperiment + RefactorCode → +25% experiment success, +0.05 velocity
 
 ### Specialization Paths
+
 Players can specialize by focusing 60%+ of actions on a strategy over 8+ weeks, unlocking persistent bonuses:
+
 - **Product Excellence**: Focus on product actions → +0.3 velocity, -10 tech debt cap
 - **Growth Hacking**: Focus on growth actions → +5% WAU growth, +10 reputation
 - **Operational Efficiency**: Focus on ops actions → -20% burn, -15 compliance risk
 - **Customer Obsessed**: Focus on customer actions → +15 NPS, -5% churn
 
 ### Strategic Examples
+
 - Early game: Combine ShipFeature + ContentLaunch for "Launch Momentum" to accelerate growth without heavy marketing spend.
 - Mid-game: Use RefactorCode + Coach for "Engineering Excellence" to maintain velocity as tech debt builds.
 - Late-game: Specialize in Growth Hacking by mixing PaidAds + RunExperiment to scale efficiently.
@@ -383,6 +393,7 @@ pub struct DilemmaOption {
 ### Event Probability & Triggering
 
 Events are triggered by:
+
 1. **Random roll each week** (5-15% base chance, up to 2 events/week)
 2. **State-dependent triggers**:
    - High tech debt → More incidents
@@ -399,9 +410,11 @@ Events are triggered by:
 ## Market Conditions
 
 ### Market Condition System Overview
+
 Market conditions introduce random external modifiers that affect gameplay, simulating real-world startup unpredictability. They last 4-8 weeks and modify action effectiveness, stat growth, and strategic decisions, encouraging adaptation and replayability.
 
 ### Market Conditions & Effects
+
 - **Bull Market** (15% chance): +30% fundraising success, +20% WAU growth, +15% burn (hiring expensive); Duration: 6 weeks
 - **Recession** (15% chance): -40% fundraising success, -10% WAU growth, +30% churn, -20% burn (talent cheaper); Duration: 8 weeks
 - **Competitor Launch** (10% chance): -15% WAU growth, -10 reputation, +5% churn; Duration: 4 weeks
@@ -410,12 +423,14 @@ Market conditions introduce random external modifiers that affect gameplay, simu
 - **Talent War** (5% chance): +60% hiring cost, -10 morale (poaching), +0.2 velocity if hire; Duration: 4 weeks
 
 ### Triggering Probabilities
+
 - 15% base chance per week to trigger any condition
 - Conditions are mutually exclusive (only one active at a time)
 - No condition during first 4 weeks (tutorial phase)
 - Severity scales with game week (more extreme later)
 
 ### Strategic Implications
+
 - During Bull Market: Prioritize fundraising and aggressive growth; avoid over-hiring.
 - During Recession: Focus on cost control and retention; hiring becomes cheaper but riskier.
 - Conditions force strategy shifts, teaching adaptability (e.g., pivot from growth to ops in downturns).
@@ -474,9 +489,11 @@ monthly_churn = base_churn × (1 + nps_modifier) × (1 + incident_modifier)
 ## Progression Systems
 
 ### Action Unlock System
+
 Actions unlock based on milestones to provide a sense of progression and prevent early-game overwhelm. Core actions (ShipFeature, FounderLedSales, Hire, Fundraise, TakeBreak) are always available.
 
 ### Unlock Conditions
+
 - **RefactorCode**: Week 5+ or Tech Debt > 50
 - **ContentLaunch**: Week 5+
 - **Coach**: Week 5+
@@ -489,20 +506,26 @@ Actions unlock based on milestones to provide a sense of progression and prevent
 - **IncidentResponse**: After first tech debt crisis
 
 ### Milestone Events
+
 Triggered at key weeks for narrative and strategic impact:
+
 - **Week 12: Quarter Review** - Investor check-in, board pressure (+burn or -morale)
 - **Week 26: Half-Year Milestone** - Major strategic decision (pivot or double down)
 - **Week 39: Scaling Challenges** - New complexity unlocked (+tech debt or +WAU)
 - **Week 52: Year One Complete** - Achievement, unlocks game+ mode
 
 ### Seasonal Challenges
+
 Every 13 weeks, temporary challenges force adaptation:
+
 - **Weeks 13-16: Hiring Freeze** - Can't hire, optimize existing team (+velocity or -burn)
 - **Weeks 26-29: Feature Sprint** - Ship 3 features or lose momentum (-WAU growth)
 - **Weeks 39-42: Fundraising Window** - Optimal time to raise (+success rate, competitive)
 
 ### Meta-Progression Bonuses
+
 Achievements from completed games unlock starting bonuses:
+
 - **Bootstrapper**: Start with +$20k bank
 - **Growth Master**: Start with +100 WAU
 - **Engineering Excellence**: Start with -10 tech debt
@@ -524,11 +547,13 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 ### Failure Conditions
 
 **Immediate game over**:
+
 - Runway ≤ 0 (out of cash)
 - Morale ≤ 0 (founder burnout)
 - Reputation ≤ 10 after major incident (trust destroyed)
 
 **Soft failure** (zombie startup):
+
 - Runway stable but < 6 months
 - MRR growth < 5% for 12 weeks
 - No path to profitability visible
@@ -570,6 +595,7 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 ## UI Components
 
 ### Main Dashboard
+
 - **Stats Panel**: Current week, runway, MRR, burn, WAU, morale, reputation, NPS
 - **Action Selection**: Card-based UI, shows focus cost and expected impacts
 - **Event Log**: Recent events, scrollable history
@@ -577,6 +603,7 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 - **Victory Progress**: Visual indicator for escape velocity streak
 
 ### Action Cards
+
 - **Title & Icon**
 - **Focus Cost** (🎯 x1, x2, etc.)
 - **Expected Impact** (ranges shown):
@@ -587,12 +614,14 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 - **Disabled state**: If insufficient focus or prerequisites not met
 
 ### Event Modal
+
 - **Animated entrance** for major events
 - **Description** with context
 - **Impact preview**: What stats will change
 - **Dilemma options** (if applicable)
 
 ### Victory Screen
+
 - **Founder Score**: Compound metric
   - Momentum × User Love × Reputation / (Dilution × Incidents)
 - **Quality of Revenue**: % from ICP, gross margin, churn
@@ -608,6 +637,7 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 **Target Win Rate**: 40% for experienced players on Normal mode
 
 **Key Multipliers** (Normal difficulty):
+
 - Starting bank: $100k
 - Starting burn: $15k/month (6.6 months runway)
 - Starting focus: 3 slots/week
@@ -616,11 +646,13 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 - Reputation → conversion: `reputation/100 × base_conversion`
 
 ### Synergy Bonus Values
+
 - Action synergies: +10-20% boost (e.g., +15% WAU for Launch Momentum)
 - Specialization bonuses: +0.3 velocity (Product), +5% WAU (Growth), -20% burn (Ops), +15 NPS (Customer)
 - Combo score multiplier: 0.0-2.0x for educational feedback
 
 ### Market Condition Multipliers
+
 - Bull Market: Fundraising 1.3x, WAU growth 1.2x, Burn 1.15x
 - Recession: Fundraising 0.6x, WAU growth 0.9x, Churn 1.3x, Burn 0.8x
 - Competitor Launch: WAU growth 0.85x, Reputation -10
@@ -629,6 +661,7 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 - Talent War: Hiring cost 1.6x, Morale -10, Velocity +0.2 if hire
 
 ### Unlock Thresholds
+
 - Week-based: RefactorCode (5), ContentLaunch (5), Coach (5), RunExperiment (9), DevRel (13), PaidAds (13), ProcessImprovement (13)
 - Metric-based: Reputation > 60 (DevRel), WAU > 500 (RunExperiment), Tech Debt > 50 (RefactorCode), After hire (Fire), After crisis (IncidentResponse)
 
@@ -644,21 +677,25 @@ Must maintain **ALL FOUR** for **12 consecutive weeks** (3 months):
 ## Strategic Depth
 
 ### System Interactions
+
 New systems interconnect to create emergent complexity: Market conditions modify action effectiveness (e.g., PaidAds in Recession), synergies reward strategic combos (e.g., RefactorCode + Coach), and progression unlocks enable specialization paths. Events trigger based on state (e.g., high tech debt causes incidents), while unlocks prevent overload.
 
 ### Example Strategies
+
 - **Bootstrap Path**: Early unlocks (RefactorCode, ContentLaunch) + Product Excellence specialization → Sustainable growth without dilution.
 - **VC Path**: Fundraise + Hire + DevRel → Scale fast with external capital, but manage burn and morale.
 - **Ops-Focused**: ComplianceWork + ProcessImprovement + Operational Efficiency → Low-risk, steady progress in regulated spaces.
 - **Growth Hack**: RunExperiment + PaidAds + Growth Hacking → Viral scaling through experimentation.
 
 ### Viable Paths to Victory
+
 - **Product-Led**: ShipFeature + RefactorCode + synergies → High velocity, escape via momentum.
 - **Sales-Led**: FounderLedSales + DevRel + ContentLaunch → Reputation-driven MRR growth.
 - **Ops-Led**: ProcessImprovement + ComplianceWork → Low incident risk, steady runway extension.
 - All paths require balancing morale, reputation, and momentum for escape velocity.
 
 ### Risk/Reward Trade-Offs
+
 - High-risk actions (PaidAds, Fire) offer big rewards but variance; low-risk (Coach, ComplianceWork) provide steady gains.
 - Synergies amplify rewards for planning but require focus slot investment.
 - Market conditions introduce random risk, rewarding adaptability over rigid strategies.
@@ -668,6 +705,7 @@ New systems interconnect to create emergent complexity: Market conditions modify
 ## Implementation Phases
 
 ### Phase 1: Core Engine (Week 1)
+
 - GameState struct and default initialization
 - Action enum and basic resolution
 - State persistence (load/save)
@@ -675,6 +713,7 @@ New systems interconnect to create emergent complexity: Market conditions modify
 - 5 essential actions (ship, sell, hire, raise, rest)
 
 ### Phase 2: UI Foundation (Week 1)
+
 - GameDashboard view
 - Stats display panel
 - Action card selection UI
@@ -682,6 +721,7 @@ New systems interconnect to create emergent complexity: Market conditions modify
 - Load/save game buttons
 
 ### Phase 3: Economy & Events (Week 2)
+
 - Full economy model (revenue, burn, growth)
 - Random event system
 - Event modal UI
@@ -689,6 +729,7 @@ New systems interconnect to create emergent complexity: Market conditions modify
 - Dilemma system
 
 ### Phase 4: Depth & Balance (Week 2)
+
 - All 15+ actions implemented
 - Charts and visualizations
 - Victory progress indicator
@@ -696,6 +737,7 @@ New systems interconnect to create emergent complexity: Market conditions modify
 - Tutorial/onboarding
 
 ### Phase 5: Polish & Tuning (Week 3)
+
 - Balance playtesting
 - Animations and polish
 - Sound effects (optional)
@@ -707,12 +749,14 @@ New systems interconnect to create emergent complexity: Market conditions modify
 ## Technical Notes
 
 ### State Management
+
 - Rust owns the canonical state
 - React never mutates state
 - All state changes via Tauri commands
 - Store snapshots every 5 weeks for undo/replay
 
 ### Persistence Format
+
 ```json
 {
   "game_id": "uuid",
