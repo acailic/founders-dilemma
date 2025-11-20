@@ -3,6 +3,11 @@ import react from '@vitejs/plugin-react'
 // import topLevelAwait from 'vite-plugin-top-level-await';
 import { visualizer } from 'rollup-plugin-visualizer';
 import removeConsole from 'vite-plugin-remove-console';
+
+const isProductionBuild = process.env.NODE_ENV === 'production';
+const defaultBase = isProductionBuild ? './' : '/';
+const resolvedBase = process.env.VITE_BASE_PATH || defaultBase;
+
 // https://vitejs.dev/config/
 // https://tauri.app/v1/guides/getting-started/setup/vite#create-the-frontend
 export default defineConfig({
@@ -29,8 +34,8 @@ export default defineConfig({
   // env variables
   envPrefix: ['VITE_', 'TAURI_ENV_'],
 
-  // GitHub Pages base path - set to repository name for deployment
-  base: process.env.VITE_BASE_PATH || '/',
+  // GitHub Pages base path - defaults to relative paths for nested deployments
+  base: resolvedBase,
 
   build: {
     // Tauri supports es2021
