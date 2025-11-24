@@ -25,7 +25,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@fontsource/open-sans": "^5.2.7",
-    "@mantine/core": "^8.3.4",
+    "@mantine/core": "^8.3.9",
     "@mantine/hooks": "^8.3.4",
     "@mantine/modals": "^8.3.4",
     "@mantine/notifications": "^8.3.4",
