@@ -87,7 +87,7 @@ jobs:
 
       - name: CI upload Windows
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'windows-latest' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: 'Windows Installers'
           path: |
@@ -96,7 +96,7 @@ jobs:
 
       - name: CI upload macOS
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'macos-latest' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: 'macOS Installer'
           path: |
@@ -104,7 +104,7 @@ jobs:
 
       - name: CI upload Linux
         if: ${{ github.ref_type == 'branch' && matrix.platform == 'ubuntu-latest' }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: 'Linux Distributions'
           path: |
